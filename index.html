@@ -736,24 +736,34 @@
         // Initialize the app
         async function initApp() {
             // Set up auth UI event listeners
+            // Inside the initApp function:
+            // Set up auth UI event listeners
             loginTab.addEventListener('click', () => {
+                 // Style the login tab as active
                  loginTab.classList.add('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400');
                  loginTab.classList.remove('text-gray-500', 'dark:text-gray-400');
+                 // Style the register tab as inactive
                  registerTab.classList.remove('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400');
                  registerTab.classList.add('text-gray-500', 'dark:text-gray-400');
+                 // Show the login form and hide the register form
                  loginForm.classList.remove('hidden');
                  registerForm.classList.add('hidden');
              });
              registerTab.addEventListener('click', () => {
+                 // Style the register tab as active
                  registerTab.classList.add('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400');
                  registerTab.classList.remove('text-gray-500', 'dark:text-gray-400');
+                 // Style the login tab as inactive
                  loginTab.classList.remove('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400');
                  loginTab.classList.add('text-gray-500', 'dark:text-gray-400');
+                 // Show the register form and hide the login form
                  registerForm.classList.remove('hidden');
                  loginForm.classList.add('hidden');
              });
-            loginForm.addEventListener('submit', handleLogin);
-            registerForm.addEventListener('submit', handleRegister);
+            loginForm.addEventListener('submit', handleLogin); // Handles form submission
+            registerForm.addEventListener('submit', handleRegister); // Handles form submission
+    
+            // ... rest of initApp logic ...
 
             // Dark mode setup
             const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
