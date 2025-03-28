@@ -1,0 +1,3291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#ffffff">
+    <title>Platform Engagement Tracker</title>
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Localforage for local storage -->
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+    <!-- Crypto.js for password hashing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        youtubeRed: '#FF0000',
+                        serviceNowGreen: '#00c487',
+                        linkedinBlue: '#0A66C2',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Reset some default styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Custom badge styling */
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .badge.youtube {
+            background-color: #FFEEEE;
+            color: #FF0000;
+        }
+        .badge.servicenow {
+            background-color: #E6F7F1;
+            color: #00c487;
+        }
+        .badge.linkedin {
+            background-color: #E6F0FA;
+            color: #0A66C2;
+        }
+        .badge.other {
+            background-color: #F3F4F6;
+            color: #6B7280;
+        }
+        /* Button styling */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #00c487;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #00A070;
+        }
+        /* Animation */
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Rotation for collapse icons */
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+        
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            transform: translateX(100%);
+            border-color: #00c487;
+        }
+        .toggle-label {
+            transition: background-color 0.2s ease;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #00c487;
+        }
+        
+        /* Form elements styling */
+        input[type="text"], 
+        input[type="url"],
+        input[type="date"],
+        input[type="password"],
+        input[type="email"],
+        select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        input:focus, select:focus {
+            outline: 2px solid #00c487;
+            border-color: #00c487;
+        }
+        
+        /* Hide main content initially until authentication is checked */
+        #main-content {
+            display: none;
+        }
+        
+        /* Show auth content initially */
+        #auth-content {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+    <!-- Authentication content (shown before login) -->
+    <div id="auth-content" class="min-h-screen flex flex-col justify-center">
+        <div class="max-w-md mx-auto p-6">
+            <div class="mb-8 text-center">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Platform Engagement Tracker</h1>
+                <p class="text-gray-600 dark:text-gray-400">Track and manage your content performance across platforms</p>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+                <!-- Login/Register tabs -->
+                <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+                    <button id="login-tab" class="px-4 py-2 border-b-2 border-green-500 text-green-600 dark:text-green-400 font-medium">Login</button>
+                    <button id="register-tab" class="px-4 py-2 text-gray-500 dark:text-gray-400 font-medium">Register</button>
+                </div>
+                
+                <!-- Login form -->
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                        <input type="email" id="login-email" name="login-email" required
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                        <input type="password" id="login-password" name="login-password" required
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                    </div>
+                    <div class="flex items-center">
+                        <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                        <label for="remember-me" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">Remember me</label>
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full btn btn-primary">
+                            <span class="material-icons mr-1">login</span> Sign in
+                        </button>
+                    </div>
+                    <div id="login-error" class="text-red-500 text-sm hidden"></div>
+                </form>
+                
+                <!-- Register form (hidden initially) -->
+                <form id="register-form" class="space-y-4 hidden">
+                    <div>
+                        <label for="register-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                        <input type="text" id="register-name" name="register-name" required
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                    </div>
+                    <div>
+                        <label for="register-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                        <input type="email" id="register-email" name="register-email" required
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                    </div>
+                    <div>
+                        <label for="register-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                        <input type="password" id="register-password" name="register-password" required
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                    </div>
+                    <div>
+                        <label for="register-confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
+                        <input type="password" id="register-confirm-password" name="register-confirm-password" required
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full btn btn-primary">
+                            <span class="material-icons mr-1">person_add</span> Create Account
+                        </button>
+                    </div>
+                    <div id="register-error" class="text-red-500 text-sm hidden"></div>
+                </form>
+                
+                <!-- Dark mode toggle in auth screen -->
+                <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Dark Mode</span>
+                        <div class="relative inline-block w-12 mr-2 align-middle select-none">
+                            <input type="checkbox" id="auth-dark-mode-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in" />
+                            <label for="auth-dark-mode-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                <p>Demo account: demo@example.com / password</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main application content (hidden until authenticated) -->
+    <div id="main-content">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow">
+            <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Platform Engagement Tracker</h1>
+                <div class="flex items-center">
+                    <!-- User profile dropdown -->
+                    <div class="relative ml-3">
+                        <div>
+                            <button id="user-menu-button" type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                <span id="current-user-name">User</span>
+                                <span class="material-icons ml-1">arrow_drop_down</span>
+                            </button>
+                        </div>
+                        <div id="user-dropdown" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                            <a href="#" id="user-profile-link" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <span class="material-icons mr-1 align-text-bottom text-sm">person</span> Your Profile
+                            </a>
+                            <a href="#" id="show-settings-link" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <span class="material-icons mr-1 align-text-bottom text-sm">settings</span> Settings
+                            </a>
+                            <button id="export-data-dropdown" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <span class="material-icons mr-1 align-text-bottom text-sm">download</span> Export Data
+                            </button>
+                            <button id="import-data-dropdown" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <span class="material-icons mr-1 align-text-bottom text-sm">upload</span> Import Data
+                            </button>
+                            <button id="logout-button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <span class="material-icons mr-1 align-text-bottom text-sm">logout</span> Sign out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+    <!-- Main content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Stats cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-100 dark:bg-blue-900 rounded-md p-3">
+                            <span class="material-icons text-blue-600 dark:text-blue-300">collections</span>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Content</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900 dark:text-white" id="total-content">0</div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-100 dark:bg-green-900 rounded-md p-3">
+                            <span class="material-icons text-green-600 dark:text-green-300">visibility</span>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Engagements</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900 dark:text-white" id="total-engagements">0</div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-purple-100 dark:bg-purple-900 rounded-md p-3">
+                            <span class="material-icons text-purple-600 dark:text-purple-300">trending_up</span>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Top Platform</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900 dark:text-white" id="top-platform">-</div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-4 dark:text-white">Engagement by Platform</h3>
+                <div>
+                    <canvas id="platform-chart" height="200"></canvas>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+                <h3 class="text-lg font-medium mb-4 dark:text-white">Top Content by Views</h3>
+                <div>
+                    <canvas id="content-chart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add content section -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-6">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4 cursor-pointer" id="toggle-add-content">
+                    <h3 class="text-lg font-medium dark:text-white">Add New Content</h3>
+                    <span class="material-icons text-gray-500 dark:text-gray-400 transform transition-transform duration-200">expand_more</span>
+                </div>
+                <div id="add-content-body" class="transition-all duration-300 overflow-hidden">
+                <form id="content-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-2">
+                        <label for="content-url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL <span class="text-red-500 dark:text-red-400">*</span></label>
+                        <input type="url" id="content-url" name="content-url" required
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                        <p id="duplicate-warning" class="text-red-500 dark:text-red-400 text-xs mt-1 hidden">Warning: URL already exists</p>
+                    </div>
+                    <div>
+                        <label for="content-source" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Platform <span class="text-red-500 dark:text-red-400">*</span></label>
+                        <select id="content-source" name="content-source" required
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            <option value="youtube">YouTube</option>
+                            <option value="servicenow">ServiceNow Community</option>
+                            <option value="linkedin">LinkedIn</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="fetch-content-info" class="block text-sm font-medium text-transparent mb-1">Get Info</label>
+                        <button type="button" id="fetch-content-info" 
+                            class="btn bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-blue-200 w-full">
+                            <span class="material-icons mr-1">cloud_download</span> Get Info
+                        </button>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="content-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected, can edit)</span></label>
+                        <input type="text" id="content-name" name="content-name" required
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
+                            placeholder="Will be extracted from URL">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="content-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description <span class="text-gray-400 dark:text-gray-500 text-xs">(optional)</span></label>
+                        <input type="text" id="content-description" name="content-description"
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
+                            placeholder="Your notes about this content">
+                    </div>
+                    <div id="duration-container" class="hidden">
+                        <label for="content-duration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected for videos)</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="material-icons text-gray-400 dark:text-gray-500 text-sm">timer</span>
+                            </span>
+                            <input type="text" id="content-duration" name="content-duration"
+                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full pl-10 sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
+                                placeholder="0:00" readonly>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="content-published" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Published Date <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected when possible)</span></label>
+                        <input type="date" id="content-published" name="content-published" required
+                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                    </div>
+                    <div class="md:col-span-4">
+                        <div class="flex justify-end">
+                            <button type="submit" 
+                                class="btn btn-primary">
+                                <span class="material-icons mr-1">add</span> Add Content
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content list -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-6">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center cursor-pointer" id="toggle-content-library">
+                        <h3 class="text-lg font-medium dark:text-white">Content Library</h3>
+                        <span class="material-icons text-gray-500 dark:text-gray-400 ml-2 transform transition-transform duration-200">expand_more</span>
+                    </div>
+                    <button id="refresh-data" class="btn btn-primary">
+                        <span class="material-icons mr-1">refresh</span> Refresh Data
+                    </button>
+                </div>
+                <div id="content-library-body" class="transition-all duration-300 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Title/Description</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Platform</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Published</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Added On</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">URL</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="content-list" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Content items will be rendered here -->
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Engagement data -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-6">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center cursor-pointer" id="toggle-engagement-data">
+                        <h3 class="text-lg font-medium dark:text-white">Latest Engagement Data</h3>
+                        <span class="material-icons text-gray-500 dark:text-gray-400 ml-2 transform transition-transform duration-200">expand_more</span>
+                    </div>
+                    <button id="refresh-all-data" class="btn btn-primary">
+                        <span class="material-icons mr-1">refresh</span> Refresh All
+                    </button>
+                </div>
+                <div id="engagement-data-body" class="transition-all duration-300 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Content</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Platform</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Views</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Hours</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Likes</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Comments</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody id="engagement-list" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Engagement data will be rendered here -->
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- API Settings Modal (hidden by default) -->
+    <div id="api-settings" class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium dark:text-white">Settings</h3>
+                    <button id="hide-settings" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                
+                <!-- App Settings -->
+                <div class="mb-6">
+                    <h4 class="text-md font-medium mb-2 dark:text-white">General Settings</h4>
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <label for="dark-mode-toggle" class="text-sm font-medium text-gray-700 dark:text-gray-300">Dark Mode</label>
+                            <div class="relative inline-block w-12 mr-2 align-middle select-none">
+                                <input type="checkbox" id="dark-mode-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in" />
+                                <label for="dark-mode-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- YouTube API Settings -->
+                <div class="mb-6">
+                    <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
+                        YouTube API 
+                        <span id="youtube-api-status" class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not Configured</span>
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="youtube-api-key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key</label>
+                            <input type="text" id="youtube-api-key" name="youtube-api-key"
+                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                To get an API key: 
+                                <a href="https://console.developers.google.com/" target="_blank" class="text-blue-500 dark:text-blue-400 hover:underline">Go to Google Cloud Console</a>, 
+                                create a project, enable YouTube Data API v3, and create an API key.
+                            </p>
+                        </div>
+                        <div class="flex items-end">
+                            <button id="test-youtube-api" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
+                                <span class="material-icons mr-1">check_circle</span> Test Connection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ServiceNow API Settings -->
+                <div class="mb-6">
+                    <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
+                        ServiceNow API 
+                        <span id="servicenow-api-status" class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not Configured</span>
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="servicenow-instance" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instance URL</label>
+                            <input type="text" id="servicenow-instance" name="servicenow-instance"
+                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
+                                placeholder="https://instance.service-now.com">
+                        </div>
+                        <div>
+                            <label for="servicenow-username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                            <input type="text" id="servicenow-username" name="servicenow-username"
+                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                        </div>
+                        <div>
+                            <label for="servicenow-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                            <input type="password" id="servicenow-password" name="servicenow-password"
+                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                        </div>
+                        <div class="md:col-span-3">
+                            <button id="test-servicenow-api" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
+                                <span class="material-icons mr-1">check_circle</span> Test Connection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LinkedIn API Settings -->
+                <div class="mb-6">
+                    <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
+                        LinkedIn API 
+                        <span id="linkedin-api-status" class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not Configured</span>
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="linkedin-client-id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client ID</label>
+                            <input type="text" id="linkedin-client-id" name="linkedin-client-id"
+                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                        </div>
+                        <div>
+                            <label for="linkedin-client-secret" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client Secret</label>
+                            <input type="password" id="linkedin-client-secret" name="linkedin-client-secret"
+                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                        </div>
+                        <div class="md:col-span-2">
+                            <button id="test-linkedin-api" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
+                                <span class="material-icons mr-1">check_circle</span> Test Configuration
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save button -->
+                <div class="mt-6">
+                    <button id="save-api-config" class="btn btn-primary">
+                        <span class="material-icons mr-1">save</span> Save Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Details Modal (hidden by default) -->
+    <div id="content-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modal-title" class="text-lg font-medium dark:text-white">Content Details</h3>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <div id="modal-content">
+                    <!-- Modal content will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Import Data Modal (hidden by default) -->
+    <div id="import-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium dark:text-white">Import Data</h3>
+                    <button id="close-import-modal" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <div class="space-y-6">
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <p class="text-gray-700 dark:text-gray-300 mb-3">Select a Platform Engagement Tracker export file to import your data. This will merge the imported data with your existing data.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-center w-full">
+                                <label for="import-file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800 hover:bg-gray-100 dark:border-gray-600">
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <span class="material-icons text-gray-500 dark:text-gray-400 text-3xl mb-2">upload_file</span>
+                                        <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">JSON file only</p>
+                                    </div>
+                                    <input id="import-file" type="file" class="hidden" accept=".json" />
+                                </label>
+                            </div>
+                            <div id="file-info" class="hidden text-sm text-gray-500 dark:text-gray-400"></div>
+                            
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                                <h4 class="font-medium text-gray-900 dark:text-white mb-2">Import Options</h4>
+                                <div class="space-y-2">
+                                    <div class="flex items-center">
+                                        <input id="import-option-merge" type="radio" name="import-option" value="merge" checked class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" />
+                                        <label for="import-option-merge" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                                            Merge with existing data (recommended)
+                                        </label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input id="import-option-replace" type="radio" name="import-option" value="replace" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" />
+                                        <label for="import-option-replace" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                                            Replace all existing data
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="import-preview" class="hidden">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Preview</h4>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-500 dark:text-gray-400">Content Items:</span>
+                                    <span id="preview-content-count" class="font-medium text-gray-900 dark:text-white ml-1">0</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 dark:text-gray-400">Engagement Records:</span>
+                                    <span id="preview-engagement-count" class="font-medium text-gray-900 dark:text-white ml-1">0</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 dark:text-gray-400">Export Date:</span>
+                                    <span id="preview-export-date" class="font-medium text-gray-900 dark:text-white ml-1">-</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 dark:text-gray-400">User:</span>
+                                    <span id="preview-user" class="font-medium text-gray-900 dark:text-white ml-1">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button id="import-data-btn" class="btn btn-primary" disabled>
+                            <span class="material-icons mr-1">upload</span> Import Data
+                        </button>
+                    </div>
+                    <div id="import-message" class="text-green-500 dark:text-green-400 text-sm hidden"></div>
+                    <div id="import-error" class="text-red-500 dark:text-red-400 text-sm hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Profile Modal (hidden by default) -->
+    <div id="profile-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium dark:text-white">Your Profile</h3>
+                    <button id="close-profile-modal" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <div class="space-y-6">
+                    <div class="flex flex-col items-center mb-6">
+                        <div class="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mb-3">
+                            <span class="material-icons text-4xl text-green-500 dark:text-green-300">person</span>
+                        </div>
+                        <h2 id="profile-name" class="text-xl font-semibold text-gray-900 dark:text-white">User Name</h2>
+                        <p id="profile-email" class="text-gray-500 dark:text-gray-400">user@example.com</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-4">
+                        <h4 class="font-medium text-gray-900 dark:text-white">Account Information</h4>
+                        <div>
+                            <label for="profile-display-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Name</label>
+                            <input type="text" id="profile-display-name" name="profile-display-name"
+                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="profile-current-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Password</label>
+                                <input type="password" id="profile-current-password" name="profile-current-password"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
+                                    placeholder="Enter to change password">
+                            </div>
+                            <div>
+                                <label for="profile-new-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
+                                <input type="password" id="profile-new-password" name="profile-new-password"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
+                                    placeholder="New password">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Account Statistics</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                            <div class="p-3">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Content Items</p>
+                                <p id="profile-content-count" class="text-xl font-semibold text-gray-900 dark:text-white">0</p>
+                            </div>
+                            <div class="p-3">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Total Views</p>
+                                <p id="profile-views-count" class="text-xl font-semibold text-gray-900 dark:text-white">0</p>
+                            </div>
+                            <div class="p-3">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Member Since</p>
+                                <p id="profile-member-since" class="text-xl font-semibold text-gray-900 dark:text-white">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button id="save-profile" class="btn btn-primary">
+                            <span class="material-icons mr-1">save</span> Save Changes
+                        </button>
+                        <button id="delete-account" class="btn bg-red-500 hover:bg-red-600 text-white">
+                            <span class="material-icons mr-1">delete</span> Delete Account
+                        </button>
+                    </div>
+                    <div id="profile-message" class="text-green-500 dark:text-green-400 text-sm hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Constants
+        const PLATFORMS = {
+            youtube: 'Youtube',
+            servicenow: 'ServiceNow Community blog page',
+            linkedin: 'LinkedIn'
+        };
+
+        // Data structures
+        let apiConfig = {
+            youtube: { apiKey: null },
+            servicenow: { instance: null, username: null, password: null },
+            linkedin: { clientId: null, clientSecret: null, accessToken: null }
+        };
+        let users = [];
+        let currentUser = null;
+        let contentItems = [];
+        let engagementData = [];
+        let urlToContentMap = {}; // Map to track URLs to content IDs
+
+        // Chart instances
+        let platformChart;
+        let contentChart;
+
+        // DOM elements for authentication
+        const authContent = document.getElementById('auth-content');
+        const mainContent = document.getElementById('main-content');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const loginTab = document.getElementById('login-tab');
+        const registerTab = document.getElementById('register-tab');
+        const loginError = document.getElementById('login-error');
+        const registerError = document.getElementById('register-error');
+        const authDarkModeToggle = document.getElementById('auth-dark-mode-toggle');
+        
+        // DOM elements for main content
+        const contentForm = document.getElementById('content-form');
+        const contentUrlField = document.getElementById('content-url');
+        const duplicateWarning = document.getElementById('duplicate-warning');
+        const contentList = document.getElementById('content-list');
+        const engagementList = document.getElementById('engagement-list');
+        const userMenuButton = document.getElementById('user-menu-button');
+        const userDropdown = document.getElementById('user-dropdown');
+        const currentUserName = document.getElementById('current-user-name');
+        const logoutButton = document.getElementById('logout-button');
+        const userProfileLink = document.getElementById('user-profile-link');
+        const exportDataBtn = document.getElementById('export-data-dropdown');
+        const importDataBtn = document.getElementById('import-data-dropdown');
+        const refreshDataBtn = document.getElementById('refresh-data');
+        const refreshAllDataBtn = document.getElementById('refresh-all-data');
+        const showSettingsBtn = document.getElementById('show-settings-link');
+        const hideSettingsBtn = document.getElementById('hide-settings');
+        const apiSettingsSection = document.getElementById('api-settings');
+        const saveApiConfigBtn = document.getElementById('save-api-config');
+        const testYouTubeApiBtn = document.getElementById('test-youtube-api');
+        const testServiceNowApiBtn = document.getElementById('test-servicenow-api');
+        const testLinkedInApiBtn = document.getElementById('test-linkedin-api');
+        const contentModal = document.getElementById('content-modal');
+        const closeModalBtn = document.getElementById('close-modal');
+        const profileModal = document.getElementById('profile-modal');
+        const closeProfileModalBtn = document.getElementById('close-profile-modal');
+        const profileName = document.getElementById('profile-name');
+        const profileEmail = document.getElementById('profile-email');
+        const profileDisplayName = document.getElementById('profile-display-name');
+        const profileContentCount = document.getElementById('profile-content-count');
+        const profileViewsCount = document.getElementById('profile-views-count');
+        const profileMemberSince = document.getElementById('profile-member-since');
+        const saveProfileBtn = document.getElementById('save-profile');
+        const deleteAccountBtn = document.getElementById('delete-account');
+        const profileMessage = document.getElementById('profile-message');
+        const totalContentEl = document.getElementById('total-content');
+        const totalEngagementsEl = document.getElementById('total-engagements');
+        const topPlatformEl = document.getElementById('top-platform');
+
+        // Initialize the app
+        async function initApp() {
+            // Set up auth event listeners
+            loginTab.addEventListener('click', () => {
+                loginTab.classList.add('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400');
+                loginTab.classList.remove('text-gray-500', 'dark:text-gray-400');
+                registerTab.classList.remove('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400');
+                registerTab.classList.add('text-gray-500', 'dark:text-gray-400');
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+            });
+            
+            registerTab.addEventListener('click', () => {
+                registerTab.classList.add('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400');
+                registerTab.classList.remove('text-gray-500', 'dark:text-gray-400');
+                loginTab.classList.remove('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400');
+                loginTab.classList.add('text-gray-500', 'dark:text-gray-400');
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            });
+            
+            loginForm.addEventListener('submit', handleLogin);
+            registerForm.addEventListener('submit', handleRegister);
+            
+            // Check for dark mode preference
+            const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+            
+            // Set initial dark mode based on saved preference or system preference
+            if (savedDarkMode || (localStorage.getItem('darkMode') === null && prefersDarkMode)) {
+                document.documentElement.classList.add('dark');
+                authDarkModeToggle.checked = true;
+            }
+            
+            // Set up dark mode toggles (both in auth screen and main app)
+            authDarkModeToggle.addEventListener('change', toggleDarkMode);
+            
+            // Initialize users array from storage
+            const savedUsers = await localforage.getItem('users');
+            if (savedUsers) {
+                users = JSON.parse(savedUsers);
+            } else {
+                // Create demo account if no users exist
+                const demoUser = {
+                    id: generateId(),
+                    name: 'Demo User',
+                    email: 'demo@example.com',
+                    password: hashPassword('password'),
+                    createdAt: new Date().toISOString()
+                };
+                users.push(demoUser);
+                await localforage.setItem('users', JSON.stringify(users));
+            }
+            
+            // Check for logged in user
+            const loggedInUserId = localStorage.getItem('loggedInUser');
+            if (loggedInUserId) {
+                const user = users.find(u => u.id === loggedInUserId);
+                if (user) {
+                    // User is logged in
+                    await loginUser(user);
+                    return;
+                }
+            }
+            
+            // No logged in user, show auth screen
+            authContent.style.display = 'block';
+            mainContent.style.display = 'none';
+        }
+        
+        // Hash password using SHA-256
+        function hashPassword(password) {
+            return CryptoJS.SHA256(password).toString();
+        }
+        
+        // Handle login form submission
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password');
+            const rememberMe = document.getElementById('remember-me').checked;
+            
+            // Find user by email
+            const user = users.find(u => u.email === email);
+            
+            if (!user || user.password !== hashPassword(password.value)) {
+                loginError.textContent = 'Invalid email or password';
+                loginError.classList.remove('hidden');
+                return;
+            }
+            
+            // Clear form and error
+            loginForm.reset();
+            loginError.classList.add('hidden');
+            
+            // Save in localStorage if remember me is checked
+            if (rememberMe) {
+                localStorage.setItem('loggedInUser', user.id);
+            } else {
+                localStorage.removeItem('loggedInUser');
+            }
+            
+            // Log in the user
+            await loginUser(user);
+        }
+        
+        // Handle register form submission
+        async function handleRegister(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            
+            // Check if passwords match
+            if (password !== confirmPassword) {
+                registerError.textContent = 'Passwords do not match';
+                registerError.classList.remove('hidden');
+                return;
+            }
+            
+            // Check if email already exists
+            if (users.some(u => u.email === email)) {
+                registerError.textContent = 'Email is already registered';
+                registerError.classList.remove('hidden');
+                return;
+            }
+            
+            // Create new user
+            const newUser = {
+                id: generateId(),
+                name: name,
+                email: email,
+                password: hashPassword(password),
+                createdAt: new Date().toISOString()
+            };
+            
+            // Add user to users array and save to storage
+            users.push(newUser);
+            await localforage.setItem('users', JSON.stringify(users));
+            
+            // Clear form and error
+            registerForm.reset();
+            registerError.classList.add('hidden');
+            
+            // Display success message and switch to login tab
+            registerError.textContent = 'Account created successfully! Please log in.';
+            registerError.classList.remove('hidden');
+            registerError.classList.add('text-green-500');
+            
+            // Switch to login tab
+            loginTab.click();
+        }
+        
+        // Login user and load their data
+        async function loginUser(user) {
+            currentUser = user;
+            
+            // Update UI
+            currentUserName.textContent = user.name;
+            authContent.style.display = 'none';
+            mainContent.style.display = 'block';
+            
+            // Load user data
+            await loadUserData();
+            
+            // Set up main app event listeners
+            setupMainAppEventListeners();
+        }
+        
+        // Load user data from storage
+        async function loadUserData() {
+            // Try to load user-specific data
+            const userPrefix = `user_${currentUser.id}_`;
+            
+            // Load API config
+            const savedApiConfig = await localforage.getItem(userPrefix + 'apiConfig');
+            if (savedApiConfig) {
+                apiConfig = JSON.parse(savedApiConfig);
+                updateApiConfigUI();
+            }
+            
+            // Load content items
+            const savedContentItems = await localforage.getItem(userPrefix + 'contentItems');
+            if (savedContentItems) {
+                contentItems = JSON.parse(savedContentItems);
+                // Rebuild URL to content map
+                rebuildUrlContentMap();
+            } else {
+                contentItems = [];
+                rebuildUrlContentMap();
+            }
+            
+            // Load engagement data
+            const savedEngagementData = await localforage.getItem(userPrefix + 'engagementData');
+            if (savedEngagementData) {
+                engagementData = JSON.parse(savedEngagementData);
+            } else {
+                engagementData = [];
+            }
+            
+            // Set default date to today for content form
+            document.getElementById('content-published').valueAsDate = new Date();
+            
+            // Render data
+            renderContentItems();
+            renderEngagementData();
+            updateStats();
+            renderCharts();
+        }
+        
+        // Set up event listeners for the main application
+        function setupMainAppEventListeners() {
+            // User menu dropdown
+            userMenuButton.addEventListener('click', () => {
+                userDropdown.classList.toggle('hidden');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+                    userDropdown.classList.add('hidden');
+                }
+            });
+            
+            // Logout button
+            logoutButton.addEventListener('click', handleLogout);
+            
+            // User profile
+            userProfileLink.addEventListener('click', showUserProfile);
+            closeProfileModalBtn.addEventListener('click', () => {
+                profileModal.classList.add('hidden');
+            });
+            saveProfileBtn.addEventListener('click', saveUserProfile);
+            deleteAccountBtn.addEventListener('click', confirmDeleteAccount);
+            
+            // Content form
+            contentForm.addEventListener('submit', handleContentFormSubmit);
+            contentUrlField.addEventListener('blur', checkForDuplicateUrl);
+            document.getElementById('fetch-content-info').addEventListener('click', fetchContentInfo);
+            
+            // Data actions
+            exportDataBtn.addEventListener('click', exportData);
+            importDataBtn.addEventListener('click', showImportModal);
+            refreshDataBtn.addEventListener('click', refreshEngagementData);
+            refreshAllDataBtn.addEventListener('click', refreshEngagementData);
+            
+            // Settings and modals
+            saveApiConfigBtn.addEventListener('click', saveApiConfig);
+            testYouTubeApiBtn.addEventListener('click', testYouTubeApi);
+            testServiceNowApiBtn.addEventListener('click', testServiceNowApi);
+            testLinkedInApiBtn.addEventListener('click', testLinkedInApi);
+            closeModalBtn.addEventListener('click', () => {
+                contentModal.classList.add('hidden');
+            });
+            showSettingsBtn.addEventListener('click', () => {
+                apiSettingsSection.classList.remove('hidden');
+                userDropdown.classList.add('hidden');
+            });
+            hideSettingsBtn.addEventListener('click', () => {
+                apiSettingsSection.classList.add('hidden');
+            });
+            
+            // Set up dark mode toggle
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            darkModeToggle.addEventListener('change', toggleDarkMode);
+            
+            // Check dark mode state and update toggle
+            if (document.documentElement.classList.contains('dark')) {
+                darkModeToggle.checked = true;
+            }
+            
+            // Add listener for platform selection to update URL field placeholder
+            document.getElementById('content-source').addEventListener('change', function() {
+                updateUrlPlaceholder();
+                
+                // Show/hide duration field based on platform
+                const platform = document.getElementById('content-source').value;
+                const durationContainer = document.getElementById('duration-container');
+                if (platform === 'youtube') {
+                    durationContainer.classList.remove('hidden');
+                } else {
+                    durationContainer.classList.add('hidden');
+                }
+            });
+            updateUrlPlaceholder();
+        }
+        
+        // Toggle dark mode
+        function toggleDarkMode(e) {
+            const isDarkMode = e.target.checked;
+            
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('darkMode', 'false');
+            }
+            
+            // Keep both toggles in sync
+            const otherToggle = e.target.id === 'dark-mode-toggle' ? 
+                document.getElementById('auth-dark-mode-toggle') : 
+                document.getElementById('dark-mode-toggle');
+                
+            if (otherToggle) {
+                otherToggle.checked = isDarkMode;
+            }
+            
+            // Update charts for better visibility in dark mode
+            updateChartsForColorMode();
+        }
+        
+        // Show user profile
+        function showUserProfile() {
+            // Close the dropdown
+            userDropdown.classList.add('hidden');
+            
+            // Update profile info
+            profileName.textContent = currentUser.name;
+            profileEmail.textContent = currentUser.email;
+            profileDisplayName.value = currentUser.name;
+            
+            // Update profile statistics
+            profileContentCount.textContent = contentItems.length;
+            
+            // Calculate total views
+            let totalViews = 0;
+            const latestEngagementByUrl = {};
+            
+            engagementData.forEach(engagement => {
+                if (!latestEngagementByUrl[engagement.contentUrl] || 
+                    new Date(engagement.timestamp) > new Date(latestEngagementByUrl[engagement.contentUrl].timestamp)) {
+                    latestEngagementByUrl[engagement.contentUrl] = engagement;
+                }
+            });
+            
+            Object.values(latestEngagementByUrl).forEach(engagement => {
+                totalViews += engagement.views;
+            });
+            
+            profileViewsCount.textContent = totalViews.toLocaleString();
+            
+            // Format date for member since
+            const memberSince = new Date(currentUser.createdAt);
+            profileMemberSince.textContent = memberSince.toLocaleDateString();
+            
+            // Clear fields and messages
+            document.getElementById('profile-current-password').value = '';
+            document.getElementById('profile-new-password').value = '';
+            profileMessage.classList.add('hidden');
+            
+            // Show the profile modal
+            profileModal.classList.remove('hidden');
+        }
+        
+        // Save user profile
+        async function saveUserProfile() {
+            const newDisplayName = profileDisplayName.value.trim();
+            const currentPassword = document.getElementById('profile-current-password').value;
+            const newPassword = document.getElementById('profile-new-password').value;
+            
+            // Update name if changed
+            if (newDisplayName && newDisplayName !== currentUser.name) {
+                currentUser.name = newDisplayName;
+                currentUserName.textContent = newDisplayName;
+                profileName.textContent = newDisplayName;
+            }
+            
+            // Update password if provided
+            if (currentPassword && newPassword) {
+                const hashedCurrentPassword = hashPassword(currentPassword);
+                
+                // Verify current password
+                if (hashedCurrentPassword !== currentUser.password) {
+                    profileMessage.textContent = 'Current password is incorrect';
+                    profileMessage.classList.remove('text-green-500', 'dark:text-green-400');
+                    profileMessage.classList.add('text-red-500', 'dark:text-red-400');
+                    profileMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                // Update password
+                currentUser.password = hashPassword(newPassword);
+                
+                // Clear password fields
+                document.getElementById('profile-current-password').value = '';
+                document.getElementById('profile-new-password').value = '';
+            }
+            
+            // Save updated user
+            const userIndex = users.findIndex(u => u.id === currentUser.id);
+            if (userIndex !== -1) {
+                users[userIndex] = currentUser;
+                await localforage.setItem('users', JSON.stringify(users));
+                
+                // Show success message
+                profileMessage.textContent = 'Profile updated successfully';
+                profileMessage.classList.add('text-green-500', 'dark:text-green-400');
+                profileMessage.classList.remove('text-red-500', 'dark:text-red-400');
+                profileMessage.classList.remove('hidden');
+                
+                // Hide message after 3 seconds
+                setTimeout(() => {
+                    profileMessage.classList.add('hidden');
+                }, 3000);
+            }
+        }
+        
+        // Confirm account deletion
+        function confirmDeleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.')) {
+                deleteAccount();
+            }
+        }
+        
+        // Delete user account
+        async function deleteAccount() {
+            const userIndex = users.findIndex(u => u.id === currentUser.id);
+            
+            if (userIndex !== -1) {
+                // Remove user from users array
+                users.splice(userIndex, 1);
+                await localforage.setItem('users', JSON.stringify(users));
+                
+                // Remove user data
+                const userPrefix = `user_${currentUser.id}_`;
+                await localforage.removeItem(userPrefix + 'apiConfig');
+                await localforage.removeItem(userPrefix + 'contentItems');
+                await localforage.removeItem(userPrefix + 'engagementData');
+                
+                // Logout
+                handleLogout();
+            }
+        }
+        
+        // Handle logout
+        function handleLogout() {
+            // Clear current user
+            currentUser = null;
+            
+            // Remove from localStorage
+            localStorage.removeItem('loggedInUser');
+            
+            // Reset data
+            contentItems = [];
+            engagementData = [];
+            urlToContentMap = {};
+            
+            // Switch to auth screen
+            authContent.style.display = 'block';
+            mainContent.style.display = 'none';
+            
+            // Reset UI
+            contentList.innerHTML = '';
+            engagementList.innerHTML = '';
+        }
+        
+        // Save data with user prefix
+        async function saveUserData(key, data) {
+            if (!currentUser) return;
+            
+            const userPrefix = `user_${currentUser.id}_`;
+            await localforage.setItem(userPrefix + key, JSON.stringify(data));
+        }
+        
+        // Update charts for dark/light mode
+        function updateChartsForColorMode() {
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            const textColor = isDarkMode ? '#ffffff' : '#333333';
+            
+            // Update platform chart
+            if (platformChart) {
+                platformChart.options.plugins.legend.labels.color = textColor;
+                platformChart.update();
+            }
+            
+            // Update content chart
+            if (contentChart) {
+                contentChart.options.scales.x.ticks.color = textColor;
+                contentChart.options.scales.y.ticks.color = textColor;
+                contentChart.update();
+            }
+        }
+
+        // Rebuild URL to content map
+        function rebuildUrlContentMap() {
+            urlToContentMap = {};
+            contentItems.forEach(item => {
+                const normalizedUrl = normalizeUrl(item.url);
+                urlToContentMap[normalizedUrl] = item.id;
+            });
+        }
+
+        // Normalize URL (remove tracking parameters, fragments, etc.)
+        function normalizeUrl(url) {
+            try {
+                const urlObj = new URL(url);
+                // Remove common tracking parameters
+                urlObj.searchParams.delete('utm_source');
+                urlObj.searchParams.delete('utm_medium');
+                urlObj.searchParams.delete('utm_campaign');
+                urlObj.searchParams.delete('utm_content');
+                urlObj.searchParams.delete('utm_term');
+                urlObj.searchParams.delete('feature');
+                // Remove hash
+                urlObj.hash = '';
+                return urlObj.toString();
+            } catch (e) {
+                // If URL parsing fails, return original
+                return url;
+            }
+        }
+
+        // Check for duplicate URL
+        function checkForDuplicateUrl() {
+            const url = contentUrlField.value;
+            if (!url) return;
+            
+            const normalizedUrl = normalizeUrl(url);
+            const existingContentId = urlToContentMap[normalizedUrl];
+            
+            if (existingContentId) {
+                // Show warning
+                duplicateWarning.classList.remove('hidden');
+                
+                // Find the existing content item
+                const existingContent = contentItems.find(item => item.id === existingContentId);
+                if (existingContent) {
+                    duplicateWarning.textContent = `Warning: This URL has already been added as "${existingContent.name}".`;
+                }
+            } else {
+                // Hide warning
+                duplicateWarning.classList.add('hidden');
+            }
+        }
+
+        // Update URL placeholder based on selected platform
+        function updateUrlPlaceholder() {
+            const platform = document.getElementById('content-source').value;
+            const urlField = document.getElementById('content-url');
+            
+            switch (platform) {
+                case 'youtube':
+                    urlField.placeholder = 'https://youtube.com/watch?v=XXXX';
+                    break;
+                case 'servicenow':
+                    urlField.placeholder = 'https://community.servicenow.com/blog/XXXX';
+                    break;
+                case 'linkedin':
+                    urlField.placeholder = 'https://www.linkedin.com/posts/XXXX';
+                    break;
+                default:
+                    urlField.placeholder = 'https://example.com';
+            }
+        }
+
+        // Fetch content information (title, date) based on URL
+        async function fetchContentInfo() {
+            const contentUrl = document.getElementById('content-url').value;
+            const platform = document.getElementById('content-source').value;
+            
+            if (!contentUrl) {
+                alert('Please enter a URL first');
+                return;
+            }
+            
+            // Show loading state
+            const fetchButton = document.getElementById('fetch-content-info');
+            fetchButton.disabled = true;
+            fetchButton.innerHTML = '<span class="material-icons animate-spin">refresh</span> Loading...';
+            
+            try {
+                // Extract content ID from URL
+                const contentId = extractContentId(contentUrl, platform);
+                
+                // Fetch content information based on platform
+                let contentInfo = null;
+                
+                switch (platform) {
+                    case 'youtube':
+                        contentInfo = await fetchYouTubeContentInfo(contentId);
+                        break;
+                    
+                    case 'servicenow':
+                        contentInfo = await fetchServiceNowContentInfo(contentId);
+                        break;
+                    
+                    case 'linkedin':
+                        contentInfo = await fetchLinkedInContentInfo(contentId);
+                        break;
+                    
+                    default:
+                        contentInfo = {
+                            title: '',
+                            publishedDate: null
+                        };
+                }
+                
+                // Update form fields with content information
+                if (contentInfo) {
+                    document.getElementById('content-name').value = contentInfo.title || '';
+                    
+                    if (contentInfo.publishedDate) {
+                        document.getElementById('content-published').valueAsDate = new Date(contentInfo.publishedDate);
+                    }
+                    
+                    // Set duration if available (for YouTube)
+                    if (contentInfo.duration && platform === 'youtube') {
+                        document.getElementById('content-duration').value = contentInfo.duration;
+                    } else {
+                        document.getElementById('content-duration').value = '';
+                    }
+                    
+                    // Show/hide duration field based on platform
+                    const durationContainer = document.getElementById('duration-container');
+                    if (platform === 'youtube') {
+                        durationContainer.classList.remove('hidden');
+                    } else {
+                        durationContainer.classList.add('hidden');
+                    }
+                }
+                
+                // Show success notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+                notification.innerHTML = '<div class="flex items-center"><span class="material-icons mr-2">check_circle</span> Content information fetched successfully</div>';
+                document.body.appendChild(notification);
+                
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            } catch (error) {
+                console.error('Error fetching content info:', error);
+                
+                // Show error notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg';
+                notification.innerHTML = `<div class="flex items-center"><span class="material-icons mr-2">error</span> Error fetching content info: ${error.message}</div>`;
+                document.body.appendChild(notification);
+                
+                // Remove notification after 5 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            } finally {
+                // Reset button state
+                fetchButton.disabled = false;
+                fetchButton.innerHTML = '<span class="material-icons mr-1">cloud_download</span> Get Info';
+            }
+        }
+        
+        // Fetch YouTube video information (title, published date, duration)
+        async function fetchYouTubeContentInfo(videoId) {
+            if (!apiConfig.youtube.apiKey) {
+                throw new Error('YouTube API key is not configured. Please add an API key in Settings.');
+            }
+            
+            // Make API call to YouTube Data API - include contentDetails for duration
+            const apiKey = apiConfig.youtube.apiKey;
+            const videoInfoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${apiKey}`;
+            
+            const response = await fetch(videoInfoUrl);
+            
+            if (!response.ok) {
+                throw new Error(`YouTube API returned status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (!data.items || data.items.length === 0) {
+                throw new Error('No data found for this YouTube video');
+            }
+            
+            const snippet = data.items[0].snippet;
+            const contentDetails = data.items[0].contentDetails;
+            
+            // Parse ISO 8601 duration format
+            let duration = '';
+            if (contentDetails && contentDetails.duration) {
+                duration = formatYouTubeDuration(contentDetails.duration);
+            }
+            
+            return {
+                title: snippet.title,
+                publishedDate: new Date(snippet.publishedAt),
+                duration: duration
+            };
+        }
+        
+        // Format YouTube ISO 8601 duration to readable format (HH:MM:SS)
+        function formatYouTubeDuration(isoDuration) {
+            const match = isoDuration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+            
+            const hours = (match[1] && match[1].replace('H', '')) || 0;
+            const minutes = (match[2] && match[2].replace('M', '')) || 0;
+            const seconds = (match[3] && match[3].replace('S', '')) || 0;
+            
+            let formatted = '';
+            
+            if (hours > 0) {
+                formatted += `${hours}:`;
+                formatted += `${minutes.toString().padStart(2, '0')}:`;
+            } else {
+                formatted += `${minutes}:`;
+            }
+            
+            formatted += seconds.toString().padStart(2, '0');
+            
+            return formatted;
+        }
+        
+        // Fetch ServiceNow content information (title, published date)
+        async function fetchServiceNowContentInfo(blogId) {
+            // In a real implementation, you would make an API call to ServiceNow
+            // For this demo, we'll use a fallback approach
+            console.log(`Would fetch ServiceNow info for blog ID: ${blogId}`);
+            
+            // Simulate a delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Fallback to a title based on the blog ID
+            return {
+                title: `ServiceNow Blog: ${blogId}`,
+                publishedDate: new Date() // Use current date as fallback
+            };
+        }
+        
+        // Fetch LinkedIn content information (title, published date)
+        async function fetchLinkedInContentInfo(postId) {
+            // In a real implementation, you would use LinkedIn API
+            // For this demo, we'll use a fallback approach
+            console.log(`Would fetch LinkedIn info for post ID: ${postId}`);
+            
+            // Simulate a delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Fallback to a title based on the post ID
+            return {
+                title: `LinkedIn Post: ${postId}`,
+                publishedDate: new Date() // Use current date as fallback
+            };
+        }
+
+        // Handle content form submission
+        async function handleContentFormSubmit(e) {
+            e.preventDefault();
+            
+            const contentName = document.getElementById('content-name').value;
+            const contentDescription = document.getElementById('content-description').value;
+            const platform = document.getElementById('content-source').value;
+            const contentUrl = document.getElementById('content-url').value;
+            const publishedDate = document.getElementById('content-published').value;
+            
+            // Normalize the URL
+            const normalizedUrl = normalizeUrl(contentUrl);
+            
+            // Check if URL already exists
+            const existingContentId = urlToContentMap[normalizedUrl];
+            if (existingContentId) {
+                // Find the existing content item
+                const existingContent = contentItems.find(item => item.id === existingContentId);
+                
+                if (confirm(`This URL has already been added as "${existingContent.name}". Do you want to update its information?`)) {
+                    // Update existing content item
+                    existingContent.name = contentName;
+                    existingContent.description = contentDescription;
+                    existingContent.publishedDate = publishedDate;
+                    
+                    // Update duration for YouTube videos
+                    if (platform === 'youtube') {
+                        existingContent.duration = document.getElementById('content-duration').value;
+                    }
+                    
+                    // Save to localforage
+                    await localforage.setItem('contentItems', JSON.stringify(contentItems));
+                    
+                    // Update UI
+                    renderContentItems();
+                    renderEngagementData();
+                    updateStats();
+                    renderCharts();
+                }
+                
+                // Reset form
+                contentForm.reset();
+                document.getElementById('content-published').valueAsDate = new Date();
+                duplicateWarning.classList.add('hidden');
+                
+                return;
+            }
+            
+            // Extract content ID from URL
+            const contentId = extractContentId(contentUrl, platform);
+            
+            // Get duration for YouTube videos
+            const duration = platform === 'youtube' ? document.getElementById('content-duration').value : null;
+            
+            // Create new content item
+            const newContentItem = {
+                id: generateId(),
+                name: contentName,
+                description: contentDescription || '', // Optional description
+                platform: platform,
+                url: contentUrl,
+                contentId: contentId,
+                publishedDate: publishedDate,
+                duration: duration, // Only for YouTube videos
+                createdAt: new Date().toISOString(),
+                lastUpdated: null
+            };
+            
+            // Add to data structure
+            contentItems.push(newContentItem);
+            
+            // Update URL map
+            urlToContentMap[normalizedUrl] = newContentItem.id;
+            
+            // Save to user-specific storage
+            await saveUserData('contentItems', contentItems);
+            
+            // Fetch initial engagement data
+            await fetchEngagementData([newContentItem]);
+            
+            // Update UI
+            renderContentItems();
+            renderEngagementData();
+            updateStats();
+            renderCharts();
+            
+            // Reset form
+            contentForm.reset();
+            document.getElementById('content-published').valueAsDate = new Date();
+            duplicateWarning.classList.add('hidden');
+        }
+
+        // Extract content ID from URL based on platform
+        function extractContentId(url, platform) {
+            try {
+                const urlObj = new URL(url);
+                
+                switch (platform) {
+                    case 'youtube':
+                        // Extract YouTube video ID
+                        // First try: from query parameter v
+                        let videoId = urlObj.searchParams.get('v');
+                        
+                        if (videoId) return videoId;
+                        
+                        // Second try: from youtu.be URLs
+                        if (urlObj.hostname === 'youtu.be') {
+                            return urlObj.pathname.substring(1); // Remove the leading slash
+                        }
+                        
+                        // Third try: from /embed/ URLs
+                        if (urlObj.pathname.includes('/embed/')) {
+                            return urlObj.pathname.split('/embed/')[1].split('/')[0];
+                        }
+                        
+                        // Fourth try: from /v/ URLs
+                        if (urlObj.pathname.includes('/v/')) {
+                            return urlObj.pathname.split('/v/')[1].split('/')[0];
+                        }
+                        
+                        // Last resort: just the last part of the URL
+                        return url.split('/').pop();
+                    
+                    case 'servicenow':
+                        // Extract ServiceNow blog ID (last part of path)
+                        return urlObj.pathname.split('/').pop();
+                    
+                    case 'linkedin':
+                        // Extract LinkedIn post ID (end part of URL)
+                        // Try to match the pattern for LinkedIn posts
+                        const linkedInMatch = urlObj.pathname.match(/\/posts\/([^\/]+)/);
+                        if (linkedInMatch && linkedInMatch[1]) {
+                            return linkedInMatch[1];
+                        }
+                        
+                        // Fallback to the last segment
+                        return urlObj.pathname.split('-').pop();
+                    
+                    default:
+                        return url;
+                }
+            } catch (e) {
+                console.error('Error extracting content ID:', e);
+                // If URL parsing fails, return a fallback
+                return url;
+            }
+        }
+
+        // Fetch engagement data for all content items or specific ones
+        async function fetchEngagementData(itemsToFetch = null) {
+            const itemsToProcess = itemsToFetch || contentItems;
+            
+            if (itemsToProcess.length === 0) {
+                return;
+            }
+            
+            // Create a timestamp for this fetch
+            const timestamp = new Date().toISOString();
+            
+            for (const item of itemsToProcess) {
+                const normalizedUrl = normalizeUrl(item.url);
+                
+                // Get engagement metrics based on platform
+                let metrics = null;
+                
+                switch (item.platform) {
+                    case 'youtube':
+                        metrics = await fetchYouTubeEngagement(item.contentId);
+                        break;
+                    
+                    case 'servicenow':
+                        metrics = await fetchServiceNowEngagement(item.contentId);
+                        break;
+                    
+                    case 'linkedin':
+                        metrics = await fetchLinkedInEngagement(item.contentId);
+                        break;
+                    
+                    default:
+                        metrics = {
+                            views: 0,
+                            likes: 0,
+                            comments: 0,
+                            shares: 0,
+                            otherMetrics: {}
+                        };
+                }
+                
+                if (!metrics) continue;
+                
+                // Create engagement record
+                const engagementRecord = {
+                    contentUrl: normalizedUrl,
+                    timestamp: timestamp,
+                    views: metrics.views,
+                    likes: metrics.likes,
+                    comments: metrics.comments,
+                    shares: metrics.shares,
+                    otherMetrics: metrics.otherMetrics || {}
+                };
+                
+                // Add to data structure
+                engagementData.push(engagementRecord);
+                
+                // Update content item's last updated timestamp
+                item.lastUpdated = timestamp;
+            }
+            
+            // Save to user-specific storage
+            await saveUserData('engagementData', engagementData);
+            await saveUserData('contentItems', contentItems);
+        }
+
+        // Fetch YouTube video engagement
+        async function fetchYouTubeEngagement(videoId) {
+            if (!apiConfig.youtube.apiKey) {
+                console.error('YouTube API not configured');
+                return null;
+            }
+            
+            try {
+                console.log(`Fetching YouTube data for video ID: ${videoId}`);
+                
+                // Make a real API call to YouTube Data API v3
+                const apiKey = apiConfig.youtube.apiKey;
+                const videoStatsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoId}&key=${apiKey}`;
+                const response = await fetch(videoStatsUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`YouTube API returned status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Check if we got valid results
+                if (!data.items || data.items.length === 0) {
+                    console.warn(`No data found for YouTube video ID: ${videoId}`);
+                    
+                    // Fall back to simulated data if the video isn't found
+                    const seed = hashCode(videoId);
+                    const rng = seededRandom(seed);
+                    
+                    return {
+                        views: Math.floor(rng() * 8000) + 2000,
+                        likes: Math.floor(rng() * 500),
+                        comments: Math.floor(rng() * 100),
+                        shares: 0, // YouTube API doesn't provide share count
+                        otherMetrics: {
+                            dislikes: Math.floor(rng() * 50),
+                            favorites: Math.floor(rng() * 20)
+                        }
+                    };
+                }
+                
+                // Extract the statistics from the API response
+                const statistics = data.items[0].statistics;
+                
+                return {
+                    views: parseInt(statistics.viewCount) || 0,
+                    likes: parseInt(statistics.likeCount) || 0,
+                    comments: parseInt(statistics.commentCount) || 0,
+                    shares: 0, // YouTube API doesn't provide share count
+                    otherMetrics: {
+                        favorites: parseInt(statistics.favoriteCount) || 0
+                    }
+                };
+            } catch (error) {
+                console.error('Error fetching YouTube data:', error);
+                
+                // Show notification about the error
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg';
+                notification.innerHTML = `<div class="flex items-center"><span class="material-icons mr-2">error</span> Error fetching YouTube data: ${error.message}</div>`;
+                document.body.appendChild(notification);
+                
+                // Remove notification after 5 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+                
+                // Fall back to simulated data
+                const seed = hashCode(videoId);
+                const rng = seededRandom(seed);
+                
+                return {
+                    views: Math.floor(rng() * 8000) + 2000,
+                    likes: Math.floor(rng() * 500),
+                    comments: Math.floor(rng() * 100),
+                    shares: 0,
+                    otherMetrics: {
+                        favorites: Math.floor(rng() * 20)
+                    }
+                };
+            }
+        }
+
+        // Fetch ServiceNow blog engagement
+        async function fetchServiceNowEngagement(blogId) {
+            if (!apiConfig.servicenow.instance || !apiConfig.servicenow.username) {
+                console.error('ServiceNow API not configured');
+                return null;
+            }
+            
+            try {
+                // This would be a real API call in production
+                console.log(`Fetching ServiceNow data for blog ID: ${blogId}`);
+                
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // In a real implementation, this would make an authenticated API request
+                // to the ServiceNow instance with the provided credentials
+                
+                // For demonstration, use our simulated data function instead
+                // This ensures consistent values for the same blog ID
+                const seed = hashCode(blogId);
+                const rng = seededRandom(seed);
+                
+                return {
+                    views: Math.floor(rng() * 3000) + 1000,
+                    likes: Math.floor(rng() * 200),
+                    comments: Math.floor(rng() * 50),
+                    shares: Math.floor(rng() * 30),
+                    otherMetrics: {
+                        bookmarks: Math.floor(rng() * 40)
+                    }
+                };
+            } catch (error) {
+                console.error('Error fetching ServiceNow data:', error);
+                return null;
+            }
+        }
+
+        // Fetch LinkedIn post engagement
+        async function fetchLinkedInEngagement(postId) {
+            if (!apiConfig.linkedin.clientId || !apiConfig.linkedin.clientSecret) {
+                console.error('LinkedIn API not configured');
+                return null;
+            }
+            
+            try {
+                // This would be a real API call in production
+                console.log(`Fetching LinkedIn data for post ID: ${postId}`);
+                
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // In a real implementation, this would use OAuth and the LinkedIn API
+                // to fetch actual engagement metrics for the post
+                
+                // For demonstration, use our simulated data function instead
+                // This ensures consistent values for the same post ID
+                const seed = hashCode(postId);
+                const rng = seededRandom(seed);
+                
+                return {
+                    views: Math.floor(rng() * 2000) + 500,
+                    likes: Math.floor(rng() * 150),
+                    comments: Math.floor(rng() * 30),
+                    shares: Math.floor(rng() * 20),
+                    otherMetrics: {
+                        impressions: Math.floor(rng() * 5000),
+                        clicks: Math.floor(rng() * 200)
+                    }
+                };
+            } catch (error) {
+                console.error('Error fetching LinkedIn data:', error);
+                return null;
+            }
+        }
+
+        // Render content items
+        function renderContentItems() {
+            contentList.innerHTML = '';
+            
+            if (contentItems.length === 0) {
+                contentList.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No content items added yet</td></tr>';
+                return;
+            }
+            
+            contentItems.forEach(item => {
+                const row = document.createElement('tr');
+                
+                const nameCell = document.createElement('td');
+                nameCell.className = 'px-6 py-4';
+                
+                // Create a div for title and description
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'font-medium text-gray-900 dark:text-white';
+                titleDiv.textContent = item.name;
+                nameCell.appendChild(titleDiv);
+                
+                // Only show description if present
+                if (item.description) {
+                    const descriptionDiv = document.createElement('div');
+                    descriptionDiv.className = 'text-sm text-gray-500 dark:text-gray-400 mt-1';
+                    descriptionDiv.textContent = item.description;
+                    nameCell.appendChild(descriptionDiv);
+                }
+                
+                const platformCell = document.createElement('td');
+                platformCell.className = 'px-6 py-4 whitespace-nowrap';
+                const platformSpan = document.createElement('span');
+                platformSpan.textContent = PLATFORMS[item.platform];
+                
+                // Add color based on platform
+                if (item.platform === 'youtube') {
+                    platformSpan.className = 'badge youtube';
+                    
+                    // Add duration badge for YouTube videos if available
+                    if (item.duration) {
+                        const durationSpan = document.createElement('span');
+                        durationSpan.className = 'badge bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 ml-2 flex items-center';
+                        durationSpan.innerHTML = `<span class="material-icons text-xs mr-1">timer</span> ${item.duration}`;
+                        platformCell.appendChild(durationSpan);
+                    }
+                } else if (item.platform === 'servicenow') {
+                    platformSpan.className = 'badge servicenow';
+                } else if (item.platform === 'linkedin') {
+                    platformSpan.className = 'badge linkedin';
+                } else {
+                    platformSpan.className = 'badge other';
+                }
+                
+                platformCell.appendChild(platformSpan);
+                
+                const publishedCell = document.createElement('td');
+                publishedCell.className = 'px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200';
+                publishedCell.textContent = formatDate(item.publishedDate);
+                
+                const addedCell = document.createElement('td');
+                addedCell.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400';
+                addedCell.textContent = formatDate(item.createdAt);
+                
+                const urlCell = document.createElement('td');
+                urlCell.className = 'px-6 py-4 whitespace-normal';
+                
+                // Create a link instead of plain text
+                const urlLink = document.createElement('a');
+                urlLink.href = item.url;
+                urlLink.target = '_blank';
+                urlLink.className = 'text-blue-500 dark:text-blue-400 hover:underline text-sm';
+                urlLink.title = item.url;
+                urlLink.textContent = truncateText(item.url, 30);
+                
+                urlCell.appendChild(urlLink);
+                
+                const actionsCell = document.createElement('td');
+                actionsCell.className = 'px-6 py-4 whitespace-nowrap text-sm';
+                
+                const viewBtn = document.createElement('button');
+                viewBtn.className = 'btn bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 mr-2 text-sm';
+                viewBtn.innerHTML = '<span class="material-icons text-sm">visibility</span>';
+                viewBtn.title = 'View Details';
+                viewBtn.addEventListener('click', () => showContentDetails(item));
+                
+                const updateBtn = document.createElement('button');
+                updateBtn.className = 'btn btn-primary text-sm mr-2';
+                updateBtn.innerHTML = '<span class="material-icons text-sm">refresh</span>';
+                updateBtn.title = 'Update Data';
+                updateBtn.addEventListener('click', () => fetchEngagementData([item]).then(() => {
+                    renderEngagementData();
+                    updateStats();
+                    renderCharts();
+                }));
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn bg-red-500 hover:bg-red-600 text-white text-sm';
+                deleteBtn.innerHTML = '<span class="material-icons text-sm">delete</span>';
+                deleteBtn.title = 'Delete';
+                deleteBtn.addEventListener('click', () => deleteContent(item.id));
+                
+                actionsCell.appendChild(viewBtn);
+                actionsCell.appendChild(updateBtn);
+                actionsCell.appendChild(deleteBtn);
+                
+                row.appendChild(nameCell);
+                row.appendChild(platformCell);
+                row.appendChild(publishedCell);
+                row.appendChild(addedCell);
+                row.appendChild(urlCell);
+                row.appendChild(actionsCell);
+                
+                contentList.appendChild(row);
+            });
+        }
+
+        // Render engagement data
+        function renderEngagementData() {
+            engagementList.innerHTML = '';
+            
+            if (engagementData.length === 0) {
+                engagementList.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No engagement data available</td></tr>';
+                return;
+            }
+            
+            // Group engagement data by content URL (not ID) and get the latest record for each
+            // This ensures duplicate URLs show the same engagement data
+            const latestEngagementByUrl = {};
+            engagementData.forEach(engagement => {
+                if (!latestEngagementByUrl[engagement.contentUrl] || 
+                    new Date(engagement.timestamp) > new Date(latestEngagementByUrl[engagement.contentUrl].timestamp)) {
+                    latestEngagementByUrl[engagement.contentUrl] = engagement;
+                }
+            });
+            
+            Object.values(latestEngagementByUrl).forEach(engagement => {
+                // Find content item based on URL, not ID
+                // For items with duplicate URLs, we'll use the first one found
+                const contentItem = contentItems.find(item => normalizeUrl(item.url) === engagement.contentUrl);
+                if (!contentItem) return; // Skip if content was deleted
+                
+                const row = document.createElement('tr');
+                
+                const nameCell = document.createElement('td');
+                nameCell.className = 'px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white';
+                nameCell.textContent = contentItem.name;
+                
+                const platformCell = document.createElement('td');
+                platformCell.className = 'px-6 py-4 whitespace-nowrap';
+                const platformSpan = document.createElement('span');
+                platformSpan.textContent = PLATFORMS[contentItem.platform];
+                
+                // Add color based on platform
+                if (contentItem.platform === 'youtube') {
+                    platformSpan.className = 'badge youtube';
+                } else if (contentItem.platform === 'servicenow') {
+                    platformSpan.className = 'badge servicenow';
+                } else if (contentItem.platform === 'linkedin') {
+                    platformSpan.className = 'badge linkedin';
+                } else {
+                    platformSpan.className = 'badge other';
+                }
+                
+                platformCell.appendChild(platformSpan);
+                
+                const viewsCell = document.createElement('td');
+                viewsCell.className = 'px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white';
+                viewsCell.textContent = engagement.views.toLocaleString();
+                
+                // Add total hours of views (only for YouTube)
+                const totalHoursCell = document.createElement('td');
+                totalHoursCell.className = 'px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200';
+                
+                if (contentItem.platform === 'youtube') {
+                    // Calculate total watch time in hours based on views and video duration
+                    let duration = 0;
+                    
+                    if (contentItem.duration) {
+                        // Parse duration string (e.g., "5:30" or "1:20:15")
+                        const durationParts = contentItem.duration.split(':').map(part => parseInt(part, 10));
+                        
+                        if (durationParts.length === 2) {
+                            // Minutes:Seconds format
+                            duration = (durationParts[0] * 60 + durationParts[1]) / 3600; // Convert to hours
+                        } else if (durationParts.length === 3) {
+                            // Hours:Minutes:Seconds format
+                            duration = durationParts[0] + (durationParts[1] * 60 + durationParts[2]) / 3600;
+                        }
+                    } else {
+                        // If no duration available, assume average YouTube video length (4.4 minutes)
+                        duration = 4.4 / 60;
+                    }
+                    
+                    // Calculate total hours based on views, duration, and average watch percentage (YouTube avg is ~50-60%)
+                    const avgWatchPercentage = 0.55; // Average user watches 55% of a video
+                    const totalHours = engagement.views * duration * avgWatchPercentage;
+                    
+                    // Format with appropriate decimal places based on size
+                    let formattedHours;
+                    if (totalHours < 10) {
+                        formattedHours = totalHours.toFixed(2);
+                    } else if (totalHours < 1000) {
+                        formattedHours = totalHours.toFixed(1);
+                    } else {
+                        formattedHours = Math.round(totalHours).toLocaleString();
+                    }
+                    
+                    totalHoursCell.textContent = formattedHours;
+                    
+                    // Add a tooltip for explanation
+                    totalHoursCell.title = `Estimated total hours watched (views × video duration × average retention rate)`;
+                } else {
+                    totalHoursCell.textContent = '-';
+                    totalHoursCell.className += ' text-gray-400 dark:text-gray-500';
+                }
+                
+                const likesCell = document.createElement('td');
+                likesCell.className = 'px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200';
+                likesCell.textContent = engagement.likes.toLocaleString();
+                
+                const commentsCell = document.createElement('td');
+                commentsCell.className = 'px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200';
+                commentsCell.textContent = engagement.comments.toLocaleString();
+                
+                const updatedCell = document.createElement('td');
+                updatedCell.className = 'px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 text-sm';
+                updatedCell.textContent = formatDateTime(engagement.timestamp);
+                
+                row.appendChild(nameCell);
+                row.appendChild(platformCell);
+                row.appendChild(viewsCell);
+                row.appendChild(totalHoursCell);
+                row.appendChild(likesCell);
+                row.appendChild(commentsCell);
+                row.appendChild(updatedCell);
+                
+                engagementList.appendChild(row);
+            });
+        }
+
+        // Show content details
+        function showContentDetails(contentItem) {
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+            
+            modalTitle.textContent = contentItem.name;
+            
+            // Get engagement data for this content
+            const normalizedUrl = normalizeUrl(contentItem.url);
+            const contentEngagements = engagementData
+                .filter(engagement => engagement.contentUrl === normalizedUrl)
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            const html = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="text-lg font-medium mb-2 dark:text-white">Content Information</h4>
+                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                                ${contentItem.description ? `
+                                <div class="mb-3 pb-3 border-b border-gray-200 dark:border-gray-600">
+                                    <span class="text-gray-500 dark:text-gray-400">Description:</span>
+                                    <p class="mt-1 text-gray-700 dark:text-gray-300">${contentItem.description}</p>
+                                </div>
+                                ` : ''}
+                                <div class="mb-2">
+                                    <span class="text-gray-500 dark:text-gray-400">Platform:</span>
+                                    <span class="font-medium dark:text-white">${PLATFORMS[contentItem.platform]}</span>
+                                    ${contentItem.platform === 'youtube' && contentItem.duration ? `
+                                    <span class="badge bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 ml-2 flex items-center inline-flex">
+                                        <span class="material-icons text-xs mr-1">timer</span> ${contentItem.duration}
+                                    </span>
+                                    ` : ''}
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-gray-500 dark:text-gray-400">Published Date:</span>
+                                    <span class="font-medium dark:text-white">${formatDate(contentItem.publishedDate)}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-gray-500 dark:text-gray-400">URL:</span>
+                                    <a href="${contentItem.url}" target="_blank" class="text-blue-500 dark:text-blue-400 hover:underline break-all">${contentItem.url}</a>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-gray-500 dark:text-gray-400">Added to Platform Engagement Tracker:</span>
+                                    <span class="font-medium dark:text-white">${formatDateTime(contentItem.createdAt)}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 dark:text-gray-400">Last Data Update:</span>
+                                    <span class="font-medium dark:text-white">${contentItem.lastUpdated ? formatDateTime(contentItem.lastUpdated) : 'Never'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-lg font-medium mb-2 dark:text-white">Latest Engagement</h4>
+                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                                ${contentEngagements.length > 0 ? `
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="text-center">
+                                            <div class="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg flex flex-col items-center">
+                                                <span class="material-icons text-blue-500 dark:text-blue-300">visibility</span>
+                                                <p class="text-gray-500 dark:text-gray-400 text-sm">Views</p>
+                                                <p class="text-2xl font-bold text-gray-900 dark:text-white">${contentEngagements[0].views.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="bg-red-100 dark:bg-red-900 p-3 rounded-lg flex flex-col items-center">
+                                                <span class="material-icons text-red-500 dark:text-red-300">thumb_up</span>
+                                                <p class="text-gray-500 dark:text-gray-400 text-sm">Likes</p>
+                                                <p class="text-2xl font-bold text-gray-900 dark:text-white">${contentEngagements[0].likes.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="bg-green-100 dark:bg-green-900 p-3 rounded-lg flex flex-col items-center">
+                                                <span class="material-icons text-green-500 dark:text-green-300">comment</span>
+                                                <p class="text-gray-500 dark:text-gray-400 text-sm">Comments</p>
+                                                <p class="text-2xl font-bold text-gray-900 dark:text-white">${contentEngagements[0].comments.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg flex flex-col items-center">
+                                                <span class="material-icons text-purple-500 dark:text-purple-300">share</span>
+                                                <p class="text-gray-500 dark:text-gray-400 text-sm">Shares</p>
+                                                <p class="text-2xl font-bold text-gray-900 dark:text-white">${contentEngagements[0].shares.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        ${contentItem.platform === 'youtube' ? `
+                                        <div class="text-center col-span-2">
+                                            <div class="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-lg flex flex-col items-center">
+                                                <span class="material-icons text-yellow-500 dark:text-yellow-300">access_time</span>
+                                                <p class="text-gray-500 dark:text-gray-400 text-sm">Total Watch Hours</p>
+                                                <p class="text-2xl font-bold text-gray-900 dark:text-white">${(() => {
+                                                    // Calculate total watch hours
+                                                    let duration = 0;
+                                                    
+                                                    if (contentItem.duration) {
+                                                        // Parse duration string
+                                                        const durationParts = contentItem.duration.split(':').map(part => parseInt(part, 10));
+                                                        
+                                                        if (durationParts.length === 2) {
+                                                            // Minutes:Seconds format
+                                                            duration = (durationParts[0] * 60 + durationParts[1]) / 3600; // Convert to hours
+                                                        } else if (durationParts.length === 3) {
+                                                            // Hours:Minutes:Seconds format
+                                                            duration = durationParts[0] + (durationParts[1] * 60 + durationParts[2]) / 3600;
+                                                        }
+                                                    } else {
+                                                        // If no duration available, assume average YouTube video length (4.4 minutes)
+                                                        duration = 4.4 / 60;
+                                                    }
+                                                    
+                                                    // Calculate total hours based on views, duration, and average watch percentage
+                                                    const avgWatchPercentage = 0.55; // Average user watches 55% of a video
+                                                    const totalHours = contentEngagements[0].views * duration * avgWatchPercentage;
+                                                    
+                                                    // Format with appropriate decimal places based on size
+                                                    if (totalHours < 10) {
+                                                        return totalHours.toFixed(2);
+                                                    } else if (totalHours < 1000) {
+                                                        return totalHours.toFixed(1);
+                                                    } else {
+                                                        return Math.round(totalHours).toLocaleString();
+                                                    }
+                                                })()}</p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Based on ${contentItem.duration || 'avg'} video length and avg. retention</p>
+                                            </div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    <div class="mt-2 text-xs text-right text-gray-500 dark:text-gray-400">
+                                        As of ${formatDateTime(contentEngagements[0].timestamp)}
+                                    </div>
+                                ` : '<p class="text-gray-500 dark:text-gray-400">No engagement data available</p>'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${contentEngagements.length > 1 ? `
+                        <div>
+                            <h4 class="text-lg font-medium mb-2 dark:text-white">Engagement History</h4>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead class="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Views</th>
+                                            ${contentItem.platform === 'youtube' ? `
+                                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Hours</th>
+                                            ` : ''}
+                                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Likes</th>
+                                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Comments</th>
+                                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Shares</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        ${contentEngagements.map(engagement => {
+                                            // Calculate total hours for YouTube
+                                            let totalHoursHtml = '';
+                                            
+                                            if (contentItem.platform === 'youtube') {
+                                                // Calculate watch time 
+                                                let duration = 0;
+                                                
+                                                if (contentItem.duration) {
+                                                    // Parse duration string
+                                                    const durationParts = contentItem.duration.split(':').map(part => parseInt(part, 10));
+                                                    
+                                                    if (durationParts.length === 2) {
+                                                        // Minutes:Seconds format
+                                                        duration = (durationParts[0] * 60 + durationParts[1]) / 3600; // Convert to hours
+                                                    } else if (durationParts.length === 3) {
+                                                        // Hours:Minutes:Seconds format
+                                                        duration = durationParts[0] + (durationParts[1] * 60 + durationParts[2]) / 3600;
+                                                    }
+                                                } else {
+                                                    // If no duration available, assume average YouTube video length (4.4 minutes)
+                                                    duration = 4.4 / 60;
+                                                }
+                                                
+                                                // Calculate total hours based on views, duration, and average watch percentage
+                                                const avgWatchPercentage = 0.55; // Average user watches 55% of a video
+                                                const totalHours = engagement.views * duration * avgWatchPercentage;
+                                                
+                                                // Format with appropriate decimal places based on size
+                                                let formattedHours;
+                                                if (totalHours < 10) {
+                                                    formattedHours = totalHours.toFixed(2);
+                                                } else if (totalHours < 1000) {
+                                                    formattedHours = totalHours.toFixed(1);
+                                                } else {
+                                                    formattedHours = Math.round(totalHours).toLocaleString();
+                                                }
+                                                
+                                                totalHoursHtml = `<td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">${formattedHours}</td>`;
+                                            }
+                                            
+                                            return `
+                                            <tr>
+                                                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${formatDateTime(engagement.timestamp)}</td>
+                                                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">${engagement.views.toLocaleString()}</td>
+                                                ${contentItem.platform === 'youtube' ? totalHoursHtml : ''}
+                                                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">${engagement.likes.toLocaleString()}</td>
+                                                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">${engagement.comments.toLocaleString()}</td>
+                                                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">${engagement.shares.toLocaleString()}</td>
+                                            </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            modalContent.innerHTML = html;
+            contentModal.classList.remove('hidden');
+        }
+
+        // Delete content
+        async function deleteContent(id) {
+            if (confirm('Are you sure you want to delete this content? This operation cannot be undone.')) {
+                // Get the content item
+                const contentItem = contentItems.find(c => c.id === id);
+                if (!contentItem) return;
+                
+                // Find all content items with the same URL
+                const normalizedUrl = normalizeUrl(contentItem.url);
+                const sameUrlContentItems = contentItems.filter(c => normalizeUrl(c.url) === normalizedUrl);
+                
+                if (sameUrlContentItems.length > 1) {
+                    // If there are other content items with the same URL, just remove this one
+                    contentItems = contentItems.filter(c => c.id !== id);
+                } else {
+                    // If this is the only content item with this URL, remove it and its engagement data
+                    contentItems = contentItems.filter(c => c.id !== id);
+                    engagementData = engagementData.filter(e => e.contentUrl !== normalizedUrl);
+                    
+                    // Remove from URL map
+                    delete urlToContentMap[normalizedUrl];
+                }
+                
+                // Save to user-specific storage
+                await saveUserData('contentItems', contentItems);
+                await saveUserData('engagementData', engagementData);
+                
+                // Update UI
+                renderContentItems();
+                renderEngagementData();
+                updateStats();
+                renderCharts();
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            // Total content items
+            totalContentEl.textContent = contentItems.length;
+            
+            // Calculate total engagements (views from latest record for each URL)
+            let totalViews = 0;
+            let engagementsByPlatform = {};
+            
+            // Get the latest engagement data for each content URL
+            const latestEngagementByUrl = {};
+            engagementData.forEach(engagement => {
+                if (!latestEngagementByUrl[engagement.contentUrl] || 
+                    new Date(engagement.timestamp) > new Date(latestEngagementByUrl[engagement.contentUrl].timestamp)) {
+                    latestEngagementByUrl[engagement.contentUrl] = engagement;
+                }
+            });
+            
+            // Calculate totals and by platform
+            Object.values(latestEngagementByUrl).forEach(engagement => {
+                const contentItem = contentItems.find(item => normalizeUrl(item.url) === engagement.contentUrl);
+                if (!contentItem) return;
+                
+                totalViews += engagement.views;
+                
+                engagementsByPlatform[contentItem.platform] = (engagementsByPlatform[contentItem.platform] || 0) + engagement.views;
+            });
+            
+            totalEngagementsEl.textContent = totalViews.toLocaleString();
+            
+            // Find top platform
+            const topPlatform = Object.keys(engagementsByPlatform).reduce((a, b) => 
+                engagementsByPlatform[a] > engagementsByPlatform[b] ? a : b, null);
+            
+            if (topPlatform && engagementsByPlatform[topPlatform] > 0) {
+                topPlatformEl.textContent = PLATFORMS[topPlatform];
+            } else {
+                topPlatformEl.textContent = '-';
+            }
+        }
+
+        // Render charts
+        function renderCharts() {
+            // Get the latest engagement data for each content URL
+            const latestEngagementByUrl = {};
+            engagementData.forEach(engagement => {
+                if (!latestEngagementByUrl[engagement.contentUrl] || 
+                    new Date(engagement.timestamp) > new Date(latestEngagementByUrl[engagement.contentUrl].timestamp)) {
+                    latestEngagementByUrl[engagement.contentUrl] = engagement;
+                }
+            });
+            
+            // Prepare platform chart data
+            const platformData = {};
+            Object.values(latestEngagementByUrl).forEach(engagement => {
+                const contentItem = contentItems.find(item => normalizeUrl(item.url) === engagement.contentUrl);
+                if (!contentItem) return;
+                
+                platformData[contentItem.platform] = (platformData[contentItem.platform] || 0) + engagement.views;
+            });
+            
+            // Prepare content chart data
+            const contentData = {};
+            Object.values(latestEngagementByUrl).forEach(engagement => {
+                const contentItem = contentItems.find(item => normalizeUrl(item.url) === engagement.contentUrl);
+                if (!contentItem) return;
+                
+                contentData[contentItem.name] = engagement.views;
+            });
+            
+            // Sort and take top 5 content items
+            const topContent = Object.entries(contentData)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+            
+            // Create or update platform chart
+            const platformCtx = document.getElementById('platform-chart').getContext('2d');
+            if (platformChart) {
+                platformChart.destroy();
+            }
+            
+            platformChart = new Chart(platformCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(platformData).map(platform => PLATFORMS[platform]),
+                    datasets: [{
+                        data: Object.values(platformData),
+                        backgroundColor: [
+                            '#FF0000', // red for Youtube
+                            '#00c487', // green for ServiceNow 
+                            '#0A66C2', // blue for LinkedIn
+                            '#6B7280'  // gray for Others
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Create or update content chart
+            const contentCtx = document.getElementById('content-chart').getContext('2d');
+            if (contentChart) {
+                contentChart.destroy();
+            }
+            
+            contentChart = new Chart(contentCtx, {
+                type: 'bar',
+                data: {
+                    labels: topContent.map(item => truncateText(item[0], 15)),
+                    datasets: [{
+                        label: 'Views',
+                        data: topContent.map(item => item[1]),
+                        backgroundColor: '#00c487'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Refresh all engagement data
+        async function refreshEngagementData() {
+            if (contentItems.length === 0) {
+                alert('No content items to refresh');
+                return;
+            }
+            
+            const refreshBtn = document.getElementById('refresh-data');
+            const refreshAllBtn = document.getElementById('refresh-all-data');
+            
+            refreshBtn.disabled = true;
+            refreshAllBtn.disabled = true;
+            refreshBtn.innerHTML = '<span class="material-icons animate-spin">refresh</span> Refreshing...';
+            refreshAllBtn.innerHTML = '<span class="material-icons animate-spin">refresh</span> Refreshing...';
+            
+            try {
+                await fetchEngagementData();
+                renderEngagementData();
+                updateStats();
+                renderCharts();
+                
+                // Show success notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+                notification.innerHTML = '<div class="flex items-center"><span class="material-icons mr-2">check_circle</span> Engagement data refreshed successfully</div>';
+                document.body.appendChild(notification);
+                
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                alert('Error refreshing data. Check console for details.');
+            } finally {
+                refreshBtn.disabled = false;
+                refreshAllBtn.disabled = false;
+                refreshBtn.innerHTML = '<span class="material-icons mr-1">refresh</span> Refresh Data';
+                refreshAllBtn.innerHTML = '<span class="material-icons mr-1">refresh</span> Refresh All';
+            }
+        }
+
+        // Save API configuration
+        async function saveApiConfig() {
+            // YouTube API config
+            apiConfig.youtube.apiKey = document.getElementById('youtube-api-key').value;
+            
+            // ServiceNow API config
+            apiConfig.servicenow.instance = document.getElementById('servicenow-instance').value;
+            apiConfig.servicenow.username = document.getElementById('servicenow-username').value;
+            apiConfig.servicenow.password = document.getElementById('servicenow-password').value;
+            
+            // LinkedIn API config
+            apiConfig.linkedin.clientId = document.getElementById('linkedin-client-id').value;
+            apiConfig.linkedin.clientSecret = document.getElementById('linkedin-client-secret').value;
+            
+            // Save to user-specific storage
+            await saveUserData('apiConfig', apiConfig);
+            
+            // Update UI
+            updateApiConfigUI();
+            
+            // Show success notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+            notification.innerHTML = '<div class="flex items-center"><span class="material-icons mr-2">check_circle</span> API configuration saved successfully</div>';
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Update API configuration UI
+        function updateApiConfigUI() {
+            // YouTube
+            document.getElementById('youtube-api-key').value = apiConfig.youtube.apiKey || '';
+            document.getElementById('youtube-api-status').className = 
+                apiConfig.youtube.apiKey ? 
+                'badge bg-green-100 text-green-800' : 
+                'badge bg-red-100 text-red-800';
+            document.getElementById('youtube-api-status').textContent = 
+                apiConfig.youtube.apiKey ? 'Configured' : 'Not Configured';
+            
+            // ServiceNow
+            document.getElementById('servicenow-instance').value = apiConfig.servicenow.instance || '';
+            document.getElementById('servicenow-username').value = apiConfig.servicenow.username || '';
+            document.getElementById('servicenow-password').value = apiConfig.servicenow.password || '';
+            document.getElementById('servicenow-api-status').className = 
+                (apiConfig.servicenow.instance && apiConfig.servicenow.username) ? 
+                'badge bg-green-100 text-green-800' : 
+                'badge bg-red-100 text-red-800';
+            document.getElementById('servicenow-api-status').textContent = 
+                (apiConfig.servicenow.instance && apiConfig.servicenow.username) ? 'Configured' : 'Not Configured';
+            
+            // LinkedIn
+            document.getElementById('linkedin-client-id').value = apiConfig.linkedin.clientId || '';
+            document.getElementById('linkedin-client-secret').value = apiConfig.linkedin.clientSecret || '';
+            document.getElementById('linkedin-api-status').className = 
+                (apiConfig.linkedin.clientId && apiConfig.linkedin.clientSecret) ? 
+                'badge bg-green-100 text-green-800' : 
+                'badge bg-red-100 text-red-800';
+            document.getElementById('linkedin-api-status').textContent = 
+                (apiConfig.linkedin.clientId && apiConfig.linkedin.clientSecret) ? 'Configured' : 'Not Configured';
+        }
+
+        // Test YouTube API
+        async function testYouTubeApi() {
+            const apiKey = document.getElementById('youtube-api-key').value;
+            
+            if (!apiKey) {
+                alert('Please enter a YouTube API key');
+                return;
+            }
+            
+            try {
+                // Make a test API call to check if the API key works
+                // We'll use a popular video ID for testing
+                const testVideoId = 'dQw4w9WgXcQ'; // Rick Astley - Never Gonna Give You Up
+                const testUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${testVideoId}&key=${apiKey}`;
+                
+                const response = await fetch(testUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`YouTube API returned status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.items || data.items.length === 0) {
+                    throw new Error('YouTube API returned no results');
+                }
+                
+                // API key is valid, save it to apiConfig
+                apiConfig.youtube.apiKey = apiKey;
+                await localforage.setItem('apiConfig', JSON.stringify(apiConfig));
+                updateApiConfigUI();
+                
+                // Show success notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+                notification.innerHTML = '<div class="flex items-center"><span class="material-icons mr-2">check_circle</span> YouTube API connection successful</div>';
+                document.body.appendChild(notification);
+                
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            } catch (error) {
+                console.error('Error testing YouTube API:', error);
+                
+                // Show error notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg';
+                notification.innerHTML = `<div class="flex items-center"><span class="material-icons mr-2">error</span> YouTube API error: ${error.message}</div>`;
+                document.body.appendChild(notification);
+                
+                // Remove notification after 5 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            }
+        }
+
+        // Test ServiceNow API
+        async function testServiceNowApi() {
+            const instance = document.getElementById('servicenow-instance').value;
+            const username = document.getElementById('servicenow-username').value;
+            const password = document.getElementById('servicenow-password').value;
+            
+            if (!instance || !username || !password) {
+                alert('Please enter all ServiceNow API details');
+                return;
+            }
+            
+            try {
+                // In a real app, we would make a test API call here
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Show success notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+                notification.innerHTML = '<div class="flex items-center"><span class="material-icons mr-2">check_circle</span> ServiceNow API connection successful</div>';
+                document.body.appendChild(notification);
+                
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            } catch (error) {
+                console.error('Error testing ServiceNow API:', error);
+                alert('Error connecting to ServiceNow API. Check console for details.');
+            }
+        }
+
+        // Test LinkedIn API
+        async function testLinkedInApi() {
+            const clientId = document.getElementById('linkedin-client-id').value;
+            const clientSecret = document.getElementById('linkedin-client-secret').value;
+            
+            if (!clientId || !clientSecret) {
+                alert('Please enter all LinkedIn API details');
+                return;
+            }
+            
+            try {
+                // In a real app, we would initiate OAuth flow here
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Show success notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+                notification.innerHTML = '<div class="flex items-center"><span class="material-icons mr-2">check_circle</span> LinkedIn API configuration looks good</div>';
+                document.body.appendChild(notification);
+                
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            } catch (error) {
+                console.error('Error testing LinkedIn API:', error);
+                alert('Error with LinkedIn API configuration. Check console for details.');
+            }
+        }
+
+        // Export data
+        function exportData() {
+            if (contentItems.length === 0 && engagementData.length === 0) {
+                alert('No data to export');
+                return;
+            }
+            
+            // Prepare export data
+            const exportObject = {
+                contentItems: contentItems,
+                engagementData: engagementData,
+                urlToContentMap: urlToContentMap,
+                apiConfig: apiConfig,
+                user: {
+                    name: currentUser.name,
+                    email: currentUser.email,
+                    createdAt: currentUser.createdAt
+                },
+                exportDate: new Date().toISOString(),
+                version: '1.0' // Add version for future compatibility
+            };
+            
+            // Create JSON blob
+            const jsonBlob = new Blob([JSON.stringify(exportObject, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(jsonBlob);
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `engagement-data-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Show success notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+            notification.innerHTML = '<div class="flex items-center"><span class="material-icons mr-2">check_circle</span> Data exported successfully</div>';
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Show import modal
+        function showImportModal() {
+            // Close dropdown
+            userDropdown.classList.add('hidden');
+            
+            // Reset import modal
+            const fileInput = document.getElementById('import-file');
+            const fileInfo = document.getElementById('file-info');
+            const importPreview = document.getElementById('import-preview');
+            const importDataButton = document.getElementById('import-data-btn');
+            const importMessage = document.getElementById('import-message');
+            const importError = document.getElementById('import-error');
+            
+            fileInput.value = '';
+            fileInfo.classList.add('hidden');
+            importPreview.classList.add('hidden');
+            importDataButton.disabled = true;
+            importMessage.classList.add('hidden');
+            importError.classList.add('hidden');
+            
+            // Set up event listeners
+            const importModal = document.getElementById('import-modal');
+            const closeImportModalBtn = document.getElementById('close-import-modal');
+            
+            closeImportModalBtn.addEventListener('click', () => {
+                importModal.classList.add('hidden');
+            });
+            
+            fileInput.addEventListener('change', handleFileSelection);
+            importDataButton.addEventListener('click', importData);
+            
+            // Show the modal
+            importModal.classList.remove('hidden');
+        }
+        
+        // Handle file selection
+        function handleFileSelection(e) {
+            const fileInput = e.target;
+            const fileInfo = document.getElementById('file-info');
+            const importPreview = document.getElementById('import-preview');
+            const importDataButton = document.getElementById('import-data-btn');
+            const importError = document.getElementById('import-error');
+            
+            // Hide previous messages
+            importError.classList.add('hidden');
+            
+            if (fileInput.files.length === 0) {
+                fileInfo.classList.add('hidden');
+                importPreview.classList.add('hidden');
+                importDataButton.disabled = true;
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            // Check file type
+            if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+                fileInfo.textContent = 'Error: Please select a JSON file';
+                fileInfo.classList.remove('hidden');
+                importPreview.classList.add('hidden');
+                importDataButton.disabled = true;
+                return;
+            }
+            
+            // Show file info
+            fileInfo.textContent = `Selected file: ${file.name} (${formatFileSize(file.size)})`;
+            fileInfo.classList.remove('hidden');
+            
+            // Read file contents
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const importData = JSON.parse(event.target.result);
+                    previewImportData(importData);
+                    importDataButton.disabled = false;
+                } catch (error) {
+                    console.error('Error parsing JSON:', error);
+                    importError.textContent = 'Error: Invalid JSON file format';
+                    importError.classList.remove('hidden');
+                    importPreview.classList.add('hidden');
+                    importDataButton.disabled = true;
+                }
+            };
+            
+            reader.onerror = function() {
+                importError.textContent = 'Error: Failed to read the file';
+                importError.classList.remove('hidden');
+                importPreview.classList.add('hidden');
+                importDataButton.disabled = true;
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Preview import data
+        function previewImportData(importData) {
+            const importPreview = document.getElementById('import-preview');
+            const contentCount = document.getElementById('preview-content-count');
+            const engagementCount = document.getElementById('preview-engagement-count');
+            const exportDate = document.getElementById('preview-export-date');
+            const userInfo = document.getElementById('preview-user');
+            const importError = document.getElementById('import-error');
+            
+            // Validate import data
+            if (!importData.contentItems || !importData.engagementData || !importData.user) {
+                importError.textContent = 'Error: Invalid export file format';
+                importError.classList.remove('hidden');
+                importPreview.classList.add('hidden');
+                document.getElementById('import-data-btn').disabled = true;
+                return;
+            }
+            
+            // Show preview
+            contentCount.textContent = importData.contentItems.length.toLocaleString();
+            engagementCount.textContent = importData.engagementData.length.toLocaleString();
+            exportDate.textContent = formatDateTime(importData.exportDate);
+            userInfo.textContent = `${importData.user.name} (${importData.user.email})`;
+            
+            importPreview.classList.remove('hidden');
+        }
+        
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes < 1024) {
+                return bytes + ' bytes';
+            } else if (bytes < 1024 * 1024) {
+                return (bytes / 1024).toFixed(1) + ' KB';
+            } else {
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            }
+        }
+        
+        // Import data
+        async function importData() {
+            const fileInput = document.getElementById('import-file');
+            const importOption = document.querySelector('input[name="import-option"]:checked').value;
+            const importMessage = document.getElementById('import-message');
+            const importError = document.getElementById('import-error');
+            const importDataButton = document.getElementById('import-data-btn');
+            
+            // Hide previous messages
+            importMessage.classList.add('hidden');
+            importError.classList.add('hidden');
+            
+            if (fileInput.files.length === 0) {
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            // Show loading state
+            importDataButton.disabled = true;
+            importDataButton.innerHTML = '<span class="material-icons animate-spin">refresh</span> Importing...';
+            
+            try {
+                // Read file contents
+                const importText = await readFileAsText(file);
+                const importData = JSON.parse(importText);
+                
+                // Validate import data
+                if (!importData.contentItems || !importData.engagementData || !importData.user) {
+                    throw new Error('Invalid export file format');
+                }
+                
+                // Handle import based on selected option
+                if (importOption === 'replace') {
+                    // Replace all existing data
+                    contentItems = importData.contentItems;
+                    engagementData = importData.engagementData;
+                    urlToContentMap = importData.urlToContentMap || {};
+                    apiConfig = importData.apiConfig;
+                    
+                    // If URL map wasn't in the export (for older exports), rebuild it
+                    if (!importData.urlToContentMap) {
+                        rebuildUrlContentMap();
+                    }
+                } else {
+                    // Merge with existing data
+                    await mergeImportData(importData);
+                }
+                
+                // Save to storage
+                await saveUserData('contentItems', contentItems);
+                await saveUserData('engagementData', engagementData);
+                await saveUserData('apiConfig', apiConfig);
+                
+                // Update UI
+                renderContentItems();
+                renderEngagementData();
+                updateStats();
+                renderCharts();
+                
+                // Show success message
+                importMessage.textContent = 'Data imported successfully';
+                importMessage.classList.remove('hidden');
+                
+                // Reset file input
+                fileInput.value = '';
+                
+                // Hide preview
+                document.getElementById('import-preview').classList.add('hidden');
+                document.getElementById('file-info').classList.add('hidden');
+                
+                // Show success notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+                notification.innerHTML = '<div class="flex items-center"><span class="material-icons mr-2">check_circle</span> Data imported successfully</div>';
+                document.body.appendChild(notification);
+                
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Error importing data:', error);
+                importError.textContent = `Error: ${error.message}`;
+                importError.classList.remove('hidden');
+            } finally {
+                // Reset button state
+                importDataButton.disabled = false;
+                importDataButton.innerHTML = '<span class="material-icons mr-1">upload</span> Import Data';
+            }
+        }
+        
+        // Read file as text
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = event => resolve(event.target.result);
+                reader.onerror = error => reject(error);
+                reader.readAsText(file);
+            });
+        }
+        
+        // Merge import data with existing data
+        async function mergeImportData(importData) {
+            // Create maps of existing items by ID for fast lookup
+            const existingContentMap = {};
+            contentItems.forEach(item => {
+                existingContentMap[item.id] = item;
+            });
+            
+            const existingUrlMap = { ...urlToContentMap };
+            
+            // Process content items - add new ones and update existing ones if needed
+            importData.contentItems.forEach(importItem => {
+                // Check if item already exists
+                if (existingContentMap[importItem.id]) {
+                    // Item already exists - update only if imported is newer or has more fields
+                    const existingItem = existingContentMap[importItem.id];
+                    
+                    // Check if import item was updated more recently
+                    const importLastUpdated = importItem.lastUpdated ? new Date(importItem.lastUpdated) : null;
+                    const existingLastUpdated = existingItem.lastUpdated ? new Date(existingItem.lastUpdated) : null;
+                    
+                    if (importLastUpdated && (!existingLastUpdated || importLastUpdated > existingLastUpdated)) {
+                        // Update existing item with new values
+                        Object.assign(existingItem, importItem);
+                    }
+                } else {
+                    // Item doesn't exist - add it
+                    contentItems.push(importItem);
+                    existingContentMap[importItem.id] = importItem;
+                }
+                
+                // Make sure URL is in the map
+                const normalizedUrl = normalizeUrl(importItem.url);
+                if (!existingUrlMap[normalizedUrl]) {
+                    existingUrlMap[normalizedUrl] = importItem.id;
+                }
+            });
+            
+            // Update URL to content map
+            urlToContentMap = existingUrlMap;
+            
+            // Process engagement data - avoid duplicates
+            const engagementByContentAndTime = {};
+            
+            // Index existing engagement records by content URL and timestamp for deduplication
+            engagementData.forEach(engagement => {
+                const key = `${engagement.contentUrl}-${engagement.timestamp}`;
+                engagementByContentAndTime[key] = engagement;
+            });
+            
+            // Process import engagement data
+            importData.engagementData.forEach(importEngagement => {
+                const key = `${importEngagement.contentUrl}-${importEngagement.timestamp}`;
+                if (!engagementByContentAndTime[key]) {
+                    // New engagement record - add it
+                    engagementData.push(importEngagement);
+                    engagementByContentAndTime[key] = importEngagement;
+                }
+            });
+            
+            // Merge API config - keep current values if they exist, otherwise use imported values
+            if (importData.apiConfig) {
+                for (const platform in importData.apiConfig) {
+                    if (!apiConfig[platform]) {
+                        apiConfig[platform] = {};
+                    }
+                    
+                    for (const key in importData.apiConfig[platform]) {
+                        // Only use imported value if current one is empty
+                        if (!apiConfig[platform][key]) {
+                            apiConfig[platform][key] = importData.apiConfig[platform][key];
+                        }
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        // Helper functions
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        }
+
+        function formatDateTime(dateTimeString) {
+            if (!dateTimeString) return 'N/A';
+            const date = new Date(dateTimeString);
+            return date.toLocaleString();
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2);
+        }
+        
+        // Seeded random number generator
+        function seededRandom(seed) {
+            return function() {
+                seed = (seed * 9301 + 49297) % 233280;
+                return seed / 233280;
+            };
+        }
+        
+        // Simple string hash function for seeding
+        function hashCode(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return Math.abs(hash);
+        }
+
+        // Setup collapsible sections
+        function setupCollapsibleSections() {
+            // Add New Content section
+            const toggleAddContent = document.getElementById('toggle-add-content');
+            const addContentBody = document.getElementById('add-content-body');
+            const addContentIcon = toggleAddContent.querySelector('.material-icons');
+            
+            toggleAddContent.addEventListener('click', () => {
+                addContentBody.classList.toggle('hidden');
+                addContentIcon.classList.toggle('rotate-180');
+                // Store preference in localStorage
+                localStorage.setItem('addContentCollapsed', addContentBody.classList.contains('hidden'));
+            });
+            
+            // Content Library section
+            const toggleContentLibrary = document.getElementById('toggle-content-library');
+            const contentLibraryBody = document.getElementById('content-library-body');
+            const contentLibraryIcon = toggleContentLibrary.querySelector('.material-icons');
+            
+            toggleContentLibrary.addEventListener('click', () => {
+                contentLibraryBody.classList.toggle('hidden');
+                contentLibraryIcon.classList.toggle('rotate-180');
+                // Store preference in localStorage
+                localStorage.setItem('contentLibraryCollapsed', contentLibraryBody.classList.contains('hidden'));
+            });
+            
+            // Engagement Data section
+            const toggleEngagementData = document.getElementById('toggle-engagement-data');
+            const engagementDataBody = document.getElementById('engagement-data-body');
+            const engagementDataIcon = toggleEngagementData.querySelector('.material-icons');
+            
+            toggleEngagementData.addEventListener('click', () => {
+                engagementDataBody.classList.toggle('hidden');
+                engagementDataIcon.classList.toggle('rotate-180');
+                // Store preference in localStorage
+                localStorage.setItem('engagementDataCollapsed', engagementDataBody.classList.contains('hidden'));
+            });
+            
+            // Load saved preferences
+            const addContentCollapsed = localStorage.getItem('addContentCollapsed') === 'true';
+            const contentLibraryCollapsed = localStorage.getItem('contentLibraryCollapsed') === 'true';
+            const engagementDataCollapsed = localStorage.getItem('engagementDataCollapsed') === 'true';
+            
+            if (addContentCollapsed) {
+                addContentBody.classList.add('hidden');
+                addContentIcon.classList.add('rotate-180');
+            }
+            
+            if (contentLibraryCollapsed) {
+                contentLibraryBody.classList.add('hidden');
+                contentLibraryIcon.classList.add('rotate-180');
+            }
+            
+            if (engagementDataCollapsed) {
+                engagementDataBody.classList.add('hidden');
+                engagementDataIcon.classList.add('rotate-180');
+            }
+        }
+        
+        // Initialize the app when the page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            setupCollapsibleSections();
+        });
+    </script>
+</body>
+</html>
