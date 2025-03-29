@@ -2,12 +2,18 @@
 const supabaseUrl = 'https://nivzsdyvkdkezigvmtqx.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pdnpzZHl2a2RrZXppZ3ZtdHF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMxMjIwMTAsImV4cCI6MjA1ODY5ODAxMH0.Yb9a9MkU_iNc9G7iX04Kr6lDlSbSLS2go-zb_R5cCtA'
 
-// Create client using the global Supabase object
-export const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+// Create Supabase client
+export const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+    }
+})
 
 // User Management
 export async function signUp(email, password, name) {
-    const { data: { user }, error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -18,15 +24,18 @@ export async function signUp(email, password, name) {
     })
     
     if (error) throw error
-    return user
+    return data.user
 }
 
 // Sign in with email and password
 export async function signIn(email, password) {
-    return await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
     })
+    
+    if (error) throw error
+    return { data, error }
 }
 
 export async function signOut() {

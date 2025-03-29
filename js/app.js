@@ -51,22 +51,42 @@ async function handleLogin(e) {
     const rememberMe = document.getElementById('remember-me').checked
     
     try {
+        // Show loading state
+        const submitButton = e.target.querySelector('button[type="submit"]')
+        const originalText = submitButton.innerHTML
+        submitButton.disabled = true
+        submitButton.innerHTML = '<span class="material-icons animate-spin">refresh</span> Logging in...'
+        
+        // Attempt login
         const { data, error } = await signIn(email, password)
+        
         if (error) throw error
         
-        if (data.user) {
+        if (data?.user) {
+            // Login successful
             await loginUser(data.user)
             
             // Clear form and error
             e.target.reset()
             document.getElementById('login-error').classList.add('hidden')
+            
+            // Store session if remember me is checked
+            if (rememberMe) {
+                localStorage.setItem('supabase.auth.token', data.session.access_token)
+            }
         } else {
             throw new Error('Login failed - no user data returned')
         }
     } catch (error) {
         console.error('Login error:', error)
-        document.getElementById('login-error').textContent = error.message || 'Failed to login'
+        const errorMessage = error.message || 'Failed to login. Please check your credentials and try again.'
+        document.getElementById('login-error').textContent = errorMessage
         document.getElementById('login-error').classList.remove('hidden')
+    } finally {
+        // Reset button state
+        const submitButton = e.target.querySelector('button[type="submit"]')
+        submitButton.disabled = false
+        submitButton.innerHTML = '<span class="material-icons mr-1">login</span> Sign in'
     }
 }
 
