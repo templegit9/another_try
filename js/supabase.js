@@ -13,39 +13,27 @@ export const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
 
 // User Management
 export async function signUp(email, password, name) {
-    // First create the auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Create auth user with metadata
+    const { data, error } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+            data: {
+                name: name,
+                full_name: name,
+                created_at: new Date().toISOString()
+            }
+        }
     })
     
-    if (authError) throw authError
+    if (error) throw error
     
     // Check if the sign up was successful
-    if (!authData?.user) {
+    if (!data?.user) {
         throw new Error('Registration failed - no user data returned')
     }
     
-    // Insert into users table
-    const { error: userError } = await supabase
-        .from('users')
-        .insert([
-            {
-                id: authData.user.id,
-                email: email,
-                name: name,
-                created_at: new Date().toISOString()
-            }
-        ])
-    
-    if (userError) {
-        console.error('Error creating user record:', userError)
-        // Try to clean up the auth user since user record failed
-        await supabase.auth.admin.deleteUser(authData.user.id)
-        throw new Error('Failed to create user record')
-    }
-    
-    return { data: authData, error: null }
+    return { data, error: null }
 }
 
 // Sign in with email and password

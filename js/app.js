@@ -153,19 +153,11 @@ async function handleRegister(e) {
 // Login user and load their data
 async function loginUser(user) {
     try {
-        // Get user data from users table
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', user.id)
-            .single()
-        
-        if (userError) throw userError
-        
-        // Set current user with combined auth and db data
+        // Set current user with metadata
         currentUser = {
             ...user,
-            name: userData.name
+            name: user.user_metadata?.name || user.email,
+            created_at: user.user_metadata?.created_at || user.created_at
         }
         
         // Update UI
@@ -1298,13 +1290,12 @@ async function saveUserProfile() {
         
         // Update name if changed
         if (newName !== currentUser.name) {
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({ name: newName })
-                .eq('id', currentUser.id)
+            const { data, error } = await supabase.auth.updateUser({
+                data: { name: newName }
+            })
             
-            if (updateError) throw updateError
-            currentUser.name = newName
+            if (error) throw error
+            currentUser = data.user
         }
         
         // Update password if provided
@@ -1317,8 +1308,8 @@ async function saveUserProfile() {
         }
         
         // Update UI
-        document.getElementById('current-user-name').textContent = newName
-        document.getElementById('profile-name').textContent = newName
+        document.getElementById('current-user-name').textContent = currentUser.name
+        document.getElementById('profile-name').textContent = currentUser.name
         
         // Clear password fields
         document.getElementById('profile-current-password').value = ''
