@@ -256,5 +256,82 @@ function showErrorNotification(message) {
     setTimeout(() => notification.remove(), 5000)
 }
 
+// Show authentication screen
+function showAuthScreen() {
+    // Hide main content and show auth content
+    document.getElementById('auth-content').style.display = 'block'
+    document.getElementById('main-content').style.display = 'none'
+    
+    // Set up auth event listeners
+    const loginTab = document.getElementById('login-tab')
+    const registerTab = document.getElementById('register-tab')
+    const loginForm = document.getElementById('login-form')
+    const registerForm = document.getElementById('register-form')
+    
+    loginTab.addEventListener('click', () => {
+        loginTab.classList.add('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400')
+        loginTab.classList.remove('text-gray-500', 'dark:text-gray-400')
+        registerTab.classList.remove('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400')
+        registerTab.classList.add('text-gray-500', 'dark:text-gray-400')
+        loginForm.classList.remove('hidden')
+        registerForm.classList.add('hidden')
+    })
+    
+    registerTab.addEventListener('click', () => {
+        registerTab.classList.add('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400')
+        registerTab.classList.remove('text-gray-500', 'dark:text-gray-400')
+        loginTab.classList.remove('border-b-2', 'border-green-500', 'text-green-600', 'dark:text-green-400')
+        loginTab.classList.add('text-gray-500', 'dark:text-gray-400')
+        registerForm.classList.remove('hidden')
+        loginForm.classList.add('hidden')
+    })
+    
+    // Set up form submissions
+    loginForm.addEventListener('submit', handleLogin)
+    registerForm.addEventListener('submit', handleRegister)
+    
+    // Set up dark mode toggle
+    const authDarkModeToggle = document.getElementById('auth-dark-toggle')
+    if (authDarkModeToggle) {
+        authDarkModeToggle.addEventListener('change', toggleDarkMode)
+        
+        // Set initial state based on system preference or saved preference
+        const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const savedDarkMode = localStorage.getItem('darkMode') === 'true'
+        
+        if (savedDarkMode || (localStorage.getItem('darkMode') === null && prefersDarkMode)) {
+            document.documentElement.classList.add('dark')
+            authDarkModeToggle.checked = true
+        }
+    }
+}
+
+// Toggle dark mode
+function toggleDarkMode(e) {
+    const isDarkMode = e.target.checked
+    
+    if (isDarkMode) {
+        document.documentElement.classList.add('dark')
+        localStorage.setItem('darkMode', 'true')
+    } else {
+        document.documentElement.classList.remove('dark')
+        localStorage.setItem('darkMode', 'false')
+    }
+    
+    // Keep both toggles in sync
+    const otherToggle = e.target.id === 'dark-mode-toggle' ? 
+        document.getElementById('auth-dark-toggle') : 
+        document.getElementById('dark-mode-toggle')
+        
+    if (otherToggle) {
+        otherToggle.checked = isDarkMode
+    }
+    
+    // Update charts for better visibility in dark mode
+    if (typeof updateChartsForColorMode === 'function') {
+        updateChartsForColorMode()
+    }
+}
+
 // Initialize the app when the page loads
 window.addEventListener('DOMContentLoaded', initApp) 
