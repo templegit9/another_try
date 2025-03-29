@@ -1,0 +1,124 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'YOUR_SUPABASE_URL'
+const supabaseKey = 'YOUR_SUPABASE_ANON_KEY'
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
+
+// User Management
+export async function signUp(email, password, name) {
+    const { data: { user }, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+            data: {
+                name
+            }
+        }
+    })
+    
+    if (error) throw error
+    return user
+}
+
+export async function signIn(email, password) {
+    const { data: { user }, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+    })
+    
+    if (error) throw error
+    return user
+}
+
+export async function signOut() {
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+}
+
+// Content Management
+export async function addContent(contentData) {
+    const { data, error } = await supabase
+        .from('content_items')
+        .insert([contentData])
+        .select()
+    
+    if (error) throw error
+    return data[0]
+}
+
+export async function updateContent(id, contentData) {
+    const { data, error } = await supabase
+        .from('content_items')
+        .update(contentData)
+        .eq('id', id)
+        .select()
+    
+    if (error) throw error
+    return data[0]
+}
+
+export async function deleteContent(id) {
+    const { error } = await supabase
+        .from('content_items')
+        .delete()
+        .eq('id', id)
+    
+    if (error) throw error
+}
+
+export async function getContentItems(userId) {
+    const { data, error } = await supabase
+        .from('content_items')
+        .select('*')
+        .eq('user_id', userId)
+    
+    if (error) throw error
+    return data
+}
+
+// Engagement Data
+export async function addEngagementData(engagementData) {
+    const { data, error } = await supabase
+        .from('engagement_data')
+        .insert([engagementData])
+        .select()
+    
+    if (error) throw error
+    return data[0]
+}
+
+export async function getEngagementData(userId) {
+    const { data, error } = await supabase
+        .from('engagement_data')
+        .select('*')
+        .eq('user_id', userId)
+    
+    if (error) throw error
+    return data
+}
+
+// API Configuration
+export async function saveApiConfig(userId, platform, config) {
+    const { data, error } = await supabase
+        .from('api_config')
+        .upsert({
+            user_id: userId,
+            platform,
+            config
+        })
+        .select()
+    
+    if (error) throw error
+    return data[0]
+}
+
+export async function getApiConfig(userId) {
+    const { data, error } = await supabase
+        .from('api_config')
+        .select('*')
+        .eq('user_id', userId)
+    
+    if (error) throw error
+    return data
+} 

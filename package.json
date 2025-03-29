@@ -1,0 +1,11 @@
+{
+  "name": "platform-engagement-tracker",
+  "version": "1.0.0",
+  "description": "Track and manage content performance across platforms",
+  "main": "index.html",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "chart.js": "^4.4.1",
+    "crypto-js": "^4.2.0"
+  }
+} 
