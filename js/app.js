@@ -1309,5 +1309,43 @@ function updateApiConfigUI() {
     }
 }
 
+// Set up collapsible sections
+function setupCollapsibleSections() {
+    // Add content section
+    const addContentToggle = document.getElementById('toggle-add-content')
+    const addContentBody = document.getElementById('add-content-body')
+    const addContentIcon = addContentToggle.querySelector('.material-icons')
+    
+    addContentToggle.addEventListener('click', () => {
+        addContentBody.classList.toggle('hidden')
+        addContentIcon.classList.toggle('rotate-180')
+    })
+    
+    // Content library section
+    const contentLibraryToggle = document.getElementById('toggle-content-library')
+    const contentLibraryBody = document.getElementById('content-library-body')
+    const contentLibraryIcon = contentLibraryToggle.querySelector('.material-icons')
+    
+    contentLibraryToggle.addEventListener('click', () => {
+        contentLibraryBody.classList.toggle('hidden')
+        contentLibraryIcon.classList.toggle('rotate-180')
+    })
+    
+    // Engagement data section
+    const engagementDataToggle = document.getElementById('toggle-engagement-data')
+    const engagementDataBody = document.getElementById('engagement-data-body')
+    const engagementDataIcon = engagementDataToggle.querySelector('.material-icons')
+    
+    engagementDataToggle.addEventListener('click', () => {
+        engagementDataBody.classList.toggle('hidden')
+        engagementDataIcon.classList.toggle('rotate-180')
+    })
+    
+    // Initially expand all sections
+    addContentBody.classList.remove('hidden')
+    contentLibraryBody.classList.remove('hidden')
+    engagementDataBody.classList.remove('hidden')
+}
+
 // Initialize the app when the page loads
 window.addEventListener('DOMContentLoaded', initApp) 
