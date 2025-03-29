@@ -182,7 +182,7 @@ async function handleContentFormSubmit(e) {
 }
 
 // Delete content
-async function deleteContent(id) {
+async function handleContentDeletion(id) {
     if (confirm('Are you sure you want to delete this content? This operation cannot be undone.')) {
         try {
             await deleteContent(id)
