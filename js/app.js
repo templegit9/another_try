@@ -499,5 +499,215 @@ function normalizeUrl(url) {
     }
 }
 
+// Fetch content information based on URL
+async function fetchContentInfo() {
+    const contentUrl = document.getElementById('content-url').value
+    const platform = document.getElementById('content-source').value
+    
+    if (!contentUrl) {
+        showErrorNotification('Please enter a URL first')
+        return
+    }
+    
+    // Show loading state
+    const fetchButton = document.getElementById('fetch-content-info')
+    fetchButton.disabled = true
+    fetchButton.innerHTML = '<span class="material-icons animate-spin">refresh</span> Loading...'
+    
+    try {
+        // Extract content ID from URL
+        const contentId = extractContentId(contentUrl, platform)
+        
+        // Fetch content information based on platform
+        let contentInfo = null
+        
+        switch (platform) {
+            case 'youtube':
+                contentInfo = await fetchYouTubeContentInfo(contentId)
+                break
+            
+            case 'servicenow':
+                contentInfo = await fetchServiceNowContentInfo(contentId)
+                break
+            
+            case 'linkedin':
+                contentInfo = await fetchLinkedInContentInfo(contentId)
+                break
+            
+            default:
+                contentInfo = {
+                    title: '',
+                    publishedDate: null
+                }
+        }
+        
+        // Update form fields with content information
+        if (contentInfo) {
+            document.getElementById('content-name').value = contentInfo.title || ''
+            
+            if (contentInfo.publishedDate) {
+                document.getElementById('content-published').valueAsDate = new Date(contentInfo.publishedDate)
+            }
+            
+            // Set duration if available (for YouTube)
+            if (contentInfo.duration && platform === 'youtube') {
+                document.getElementById('content-duration').value = contentInfo.duration
+            } else {
+                document.getElementById('content-duration').value = ''
+            }
+        }
+        
+        showSuccessNotification('Content information fetched successfully')
+    } catch (error) {
+        console.error('Error fetching content info:', error)
+        showErrorNotification(`Error fetching content info: ${error.message}`)
+    } finally {
+        // Reset button state
+        fetchButton.disabled = false
+        fetchButton.innerHTML = '<span class="material-icons mr-1">cloud_download</span> Get Info'
+    }
+}
+
+// Extract content ID from URL based on platform
+function extractContentId(url, platform) {
+    try {
+        const urlObj = new URL(url)
+        
+        switch (platform) {
+            case 'youtube':
+                // Extract YouTube video ID
+                // First try: from query parameter v
+                let videoId = urlObj.searchParams.get('v')
+                
+                if (videoId) return videoId
+                
+                // Second try: from youtu.be URLs
+                if (urlObj.hostname === 'youtu.be') {
+                    return urlObj.pathname.substring(1) // Remove the leading slash
+                }
+                
+                // Third try: from /embed/ URLs
+                if (urlObj.pathname.includes('/embed/')) {
+                    return urlObj.pathname.split('/embed/')[1].split('/')[0]
+                }
+                
+                // Fourth try: from /v/ URLs
+                if (urlObj.pathname.includes('/v/')) {
+                    return urlObj.pathname.split('/v/')[1].split('/')[0]
+                }
+                
+                // Last resort: just the last part of the URL
+                return url.split('/').pop()
+            
+            case 'servicenow':
+                // Extract ServiceNow blog ID (last part of path)
+                return urlObj.pathname.split('/').pop()
+            
+            case 'linkedin':
+                // Extract LinkedIn post ID (end part of URL)
+                const linkedInMatch = urlObj.pathname.match(/\/posts\/([^\/]+)/)
+                if (linkedInMatch && linkedInMatch[1]) {
+                    return linkedInMatch[1]
+                }
+                
+                // Fallback to the last segment
+                return urlObj.pathname.split('-').pop()
+            
+            default:
+                return url
+        }
+    } catch (e) {
+        console.error('Error extracting content ID:', e)
+        return url
+    }
+}
+
+// Fetch YouTube video information
+async function fetchYouTubeContentInfo(videoId) {
+    if (!apiConfig.youtube.apiKey) {
+        throw new Error('YouTube API key is not configured. Please add an API key in Settings.')
+    }
+    
+    const apiKey = apiConfig.youtube.apiKey
+    const videoInfoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${apiKey}`
+    
+    const response = await fetch(videoInfoUrl)
+    
+    if (!response.ok) {
+        throw new Error(`YouTube API returned status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    if (!data.items || data.items.length === 0) {
+        throw new Error('No data found for this YouTube video')
+    }
+    
+    const snippet = data.items[0].snippet
+    const contentDetails = data.items[0].contentDetails
+    
+    // Parse ISO 8601 duration format
+    let duration = ''
+    if (contentDetails && contentDetails.duration) {
+        duration = formatYouTubeDuration(contentDetails.duration)
+    }
+    
+    return {
+        title: snippet.title,
+        publishedDate: new Date(snippet.publishedAt),
+        duration: duration
+    }
+}
+
+// Format YouTube duration from ISO 8601 to readable format
+function formatYouTubeDuration(isoDuration) {
+    const match = isoDuration.match(/PT(\d+H)?(\d+M)?(\d+S)?/)
+    
+    const hours = (match[1] && match[1].replace('H', '')) || 0
+    const minutes = (match[2] && match[2].replace('M', '')) || 0
+    const seconds = (match[3] && match[3].replace('S', '')) || 0
+    
+    let formatted = ''
+    
+    if (hours > 0) {
+        formatted += `${hours}:`
+        formatted += `${minutes.toString().padStart(2, '0')}:`
+    } else {
+        formatted += `${minutes}:`
+    }
+    
+    formatted += seconds.toString().padStart(2, '0')
+    
+    return formatted
+}
+
+// Fetch ServiceNow content information
+async function fetchServiceNowContentInfo(blogId) {
+    if (!apiConfig.servicenow.instance || !apiConfig.servicenow.username) {
+        throw new Error('ServiceNow API not configured. Please configure it in Settings.')
+    }
+    
+    // For demo purposes, return simulated data
+    // In production, this would make an actual API call
+    return {
+        title: `ServiceNow Blog: ${blogId}`,
+        publishedDate: new Date()
+    }
+}
+
+// Fetch LinkedIn content information
+async function fetchLinkedInContentInfo(postId) {
+    if (!apiConfig.linkedin.clientId || !apiConfig.linkedin.clientSecret) {
+        throw new Error('LinkedIn API not configured. Please configure it in Settings.')
+    }
+    
+    // For demo purposes, return simulated data
+    // In production, this would make an actual API call
+    return {
+        title: `LinkedIn Post: ${postId}`,
+        publishedDate: new Date()
+    }
+}
+
 // Initialize the app when the page loads
 window.addEventListener('DOMContentLoaded', initApp) 
