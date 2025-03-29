@@ -94,10 +94,19 @@ async function handleLogin(e) {
 async function handleRegister(e) {
     e.preventDefault()
     
-    const name = document.getElementById('register-name').value
-    const email = document.getElementById('register-email').value
+    const name = document.getElementById('register-name').value.trim()
+    const email = document.getElementById('register-email').value.trim()
     const password = document.getElementById('register-password').value
     const confirmPassword = document.getElementById('register-confirm-password').value
+    
+    // Basic validation
+    if (!name || !email || !password) {
+        const registerError = document.getElementById('register-error')
+        registerError.textContent = 'All fields are required'
+        registerError.classList.remove('hidden', 'text-green-500')
+        registerError.classList.add('text-red-500')
+        return
+    }
     
     // Show loading state
     const submitButton = e.target.querySelector('button[type="submit"]')
@@ -110,12 +119,13 @@ async function handleRegister(e) {
             throw new Error('Passwords do not match')
         }
         
+        // Attempt registration
         const { data, error } = await signUp(email, password, name)
         if (error) throw error
         
-        // Show success message
+        // Registration successful
         const registerError = document.getElementById('register-error')
-        registerError.textContent = 'Account created successfully! Please check your email for verification.'
+        registerError.textContent = 'Account created successfully! You can now log in.'
         registerError.classList.remove('hidden', 'text-red-500')
         registerError.classList.add('text-green-500')
         
@@ -130,7 +140,7 @@ async function handleRegister(e) {
     } catch (error) {
         console.error('Registration error:', error)
         const registerError = document.getElementById('register-error')
-        registerError.textContent = error.message
+        registerError.textContent = error.message || 'Failed to create account'
         registerError.classList.remove('hidden', 'text-green-500')
         registerError.classList.add('text-red-500')
     } finally {
@@ -142,15 +152,36 @@ async function handleRegister(e) {
 
 // Login user and load their data
 async function loginUser(user) {
-    currentUser = user
-    
-    // Update UI
-    document.getElementById('current-user-name').textContent = user.user_metadata.name
-    document.getElementById('auth-content').style.display = 'none'
-    document.getElementById('main-content').style.display = 'block'
-    
-    // Load user data
-    await loadUserData()
+    try {
+        // Get user data from users table
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single()
+        
+        if (userError) throw userError
+        
+        // Set current user with combined auth and db data
+        currentUser = {
+            ...user,
+            name: userData.name
+        }
+        
+        // Update UI
+        document.getElementById('current-user-name').textContent = currentUser.name
+        document.getElementById('auth-content').style.display = 'none'
+        document.getElementById('main-content').style.display = 'block'
+        
+        // Load user data
+        await loadUserData()
+    } catch (error) {
+        console.error('Error loading user data:', error)
+        // If we can't load the user data, sign them out
+        await signOut()
+        showAuthScreen()
+        showErrorNotification('Error loading user data')
+    }
 }
 
 // Load user data from Supabase
@@ -1233,15 +1264,15 @@ async function testLinkedInApi() {
     }
 }
 
-// User profile functions
+// Show user profile
 function showUserProfile() {
     document.getElementById('profile-modal').classList.remove('hidden')
     document.getElementById('user-dropdown').classList.add('hidden')
     
     // Populate profile data
-    document.getElementById('profile-name').textContent = currentUser.user_metadata.name
+    document.getElementById('profile-name').textContent = currentUser.name
     document.getElementById('profile-email').textContent = currentUser.email
-    document.getElementById('profile-display-name').value = currentUser.user_metadata.name
+    document.getElementById('profile-display-name').value = currentUser.name
     
     // Update stats
     document.getElementById('profile-content-count').textContent = contentItems.length.toLocaleString()
@@ -1258,20 +1289,22 @@ function showUserProfile() {
         new Date(currentUser.created_at).toLocaleDateString()
 }
 
+// Save user profile
 async function saveUserProfile() {
     try {
         const newName = document.getElementById('profile-display-name').value
         const currentPassword = document.getElementById('profile-current-password').value
         const newPassword = document.getElementById('profile-new-password').value
         
-        // Update display name if changed
-        if (newName !== currentUser.user_metadata.name) {
-            const { data: user, error } = await supabase.auth.updateUser({
-                data: { name: newName }
-            })
+        // Update name if changed
+        if (newName !== currentUser.name) {
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ name: newName })
+                .eq('id', currentUser.id)
             
-            if (error) throw error
-            currentUser = user
+            if (updateError) throw updateError
+            currentUser.name = newName
         }
         
         // Update password if provided
