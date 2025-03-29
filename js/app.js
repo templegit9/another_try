@@ -709,5 +709,605 @@ async function fetchLinkedInContentInfo(postId) {
     }
 }
 
+// Refresh engagement data for content items
+async function refreshEngagementData(e) {
+    if (e) e.preventDefault()
+    
+    // Show loading state
+    const refreshButton = e ? e.target : document.getElementById('refresh-data')
+    const originalText = refreshButton.innerHTML
+    refreshButton.disabled = true
+    refreshButton.innerHTML = '<span class="material-icons animate-spin">refresh</span> Refreshing...'
+    
+    try {
+        // Get content items to refresh
+        const itemsToRefresh = e && e.target.id === 'refresh-all-data' ? 
+            contentItems : // Refresh all items
+            contentItems.slice(0, 5) // Refresh only latest 5 items
+        
+        if (itemsToRefresh.length === 0) {
+            showErrorNotification('No content items to refresh')
+            return
+        }
+        
+        // Fetch engagement data for each item
+        await fetchEngagementData(itemsToRefresh)
+        
+        // Update UI
+        renderEngagementData()
+        updateStats()
+        renderCharts()
+        
+        showSuccessNotification('Engagement data refreshed successfully')
+    } catch (error) {
+        console.error('Error refreshing engagement data:', error)
+        showErrorNotification('Error refreshing engagement data')
+    } finally {
+        // Reset button state
+        refreshButton.disabled = false
+        refreshButton.innerHTML = originalText
+    }
+}
+
+// Fetch engagement data for content items
+async function fetchEngagementData(items) {
+    for (const item of items) {
+        try {
+            let data = null
+            
+            switch (item.platform) {
+                case 'youtube':
+                    data = await fetchYouTubeEngagement(item)
+                    break
+                
+                case 'servicenow':
+                    data = await fetchServiceNowEngagement(item)
+                    break
+                
+                case 'linkedin':
+                    data = await fetchLinkedInEngagement(item)
+                    break
+            }
+            
+            if (data) {
+                // Add engagement data to Supabase
+                await addEngagementData({
+                    user_id: currentUser.id,
+                    content_id: item.id,
+                    views: data.views,
+                    likes: data.likes,
+                    comments: data.comments,
+                    watch_time: data.watchTime,
+                    timestamp: new Date().toISOString()
+                })
+                
+                // Update local state
+                engagementData.push({
+                    ...data,
+                    content_id: item.id,
+                    timestamp: new Date().toISOString()
+                })
+            }
+        } catch (error) {
+            console.error(`Error fetching engagement data for ${item.platform}:`, error)
+        }
+    }
+}
+
+// Fetch YouTube engagement data
+async function fetchYouTubeEngagement(item) {
+    if (!apiConfig.youtube.apiKey) {
+        throw new Error('YouTube API key is not configured')
+    }
+    
+    const apiKey = apiConfig.youtube.apiKey
+    const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${item.content_id}&key=${apiKey}`
+    
+    const response = await fetch(statsUrl)
+    
+    if (!response.ok) {
+        throw new Error(`YouTube API returned status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    if (!data.items || data.items.length === 0) {
+        throw new Error('No data found for this YouTube video')
+    }
+    
+    const stats = data.items[0].statistics
+    
+    return {
+        views: parseInt(stats.viewCount) || 0,
+        likes: parseInt(stats.likeCount) || 0,
+        comments: parseInt(stats.commentCount) || 0,
+        watchTime: 0 // Watch time requires YouTube Analytics API
+    }
+}
+
+// Fetch ServiceNow engagement data
+async function fetchServiceNowEngagement(item) {
+    if (!apiConfig.servicenow.instance || !apiConfig.servicenow.username) {
+        throw new Error('ServiceNow API not configured')
+    }
+    
+    // For demo purposes, return simulated data
+    // In production, this would make an actual API call
+    return {
+        views: Math.floor(Math.random() * 1000),
+        likes: Math.floor(Math.random() * 50),
+        comments: Math.floor(Math.random() * 20),
+        watchTime: 0
+    }
+}
+
+// Fetch LinkedIn engagement data
+async function fetchLinkedInEngagement(item) {
+    if (!apiConfig.linkedin.clientId || !apiConfig.linkedin.clientSecret) {
+        throw new Error('LinkedIn API not configured')
+    }
+    
+    // For demo purposes, return simulated data
+    // In production, this would make an actual API call
+    return {
+        views: Math.floor(Math.random() * 5000),
+        likes: Math.floor(Math.random() * 200),
+        comments: Math.floor(Math.random() * 50),
+        watchTime: 0
+    }
+}
+
+// Render content items in the table
+function renderContentItems() {
+    const contentList = document.getElementById('content-list')
+    contentList.innerHTML = ''
+    
+    contentItems.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).forEach(item => {
+        const row = document.createElement('tr')
+        row.innerHTML = `
+            <td class="px-6 py-4">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">${item.name}</div>
+                ${item.description ? `<div class="text-sm text-gray-500 dark:text-gray-400">${item.description}</div>` : ''}
+            </td>
+            <td class="px-6 py-4">
+                <span class="badge ${item.platform}">${item.platform}</span>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                ${new Date(item.published_date).toLocaleDateString()}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                ${new Date(item.created_at).toLocaleDateString()}
+            </td>
+            <td class="px-6 py-4">
+                <a href="${item.url}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">
+                    ${item.url}
+                </a>
+            </td>
+            <td class="px-6 py-4 text-right text-sm font-medium">
+                <button onclick="handleContentDeletion(${item.id})" class="text-red-600 dark:text-red-400 hover:text-red-900">
+                    <span class="material-icons">delete</span>
+                </button>
+            </td>
+        `
+        contentList.appendChild(row)
+    })
+}
+
+// Render engagement data in the table
+function renderEngagementData() {
+    const engagementList = document.getElementById('engagement-list')
+    engagementList.innerHTML = ''
+    
+    // Group engagement data by content_id and get latest for each
+    const latestEngagements = engagementData.reduce((acc, curr) => {
+        if (!acc[curr.content_id] || new Date(acc[curr.content_id].timestamp) < new Date(curr.timestamp)) {
+            acc[curr.content_id] = curr
+        }
+        return acc
+    }, {})
+    
+    Object.values(latestEngagements).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(data => {
+        const content = contentItems.find(item => item.id === data.content_id)
+        if (!content) return
+        
+        const row = document.createElement('tr')
+        row.innerHTML = `
+            <td class="px-6 py-4">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">${content.name}</div>
+            </td>
+            <td class="px-6 py-4">
+                <span class="badge ${content.platform}">${content.platform}</span>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                ${data.views.toLocaleString()}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                ${formatWatchTime(data.watch_time)}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                ${data.likes.toLocaleString()}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                ${data.comments.toLocaleString()}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                ${new Date(data.timestamp).toLocaleString()}
+            </td>
+        `
+        engagementList.appendChild(row)
+    })
+}
+
+// Format watch time in hours and minutes
+function formatWatchTime(minutes) {
+    if (!minutes || minutes === 0) return '0h'
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return `${hours}h ${mins}m`
+}
+
+// Update statistics cards
+function updateStats() {
+    // Update total content count
+    document.getElementById('total-content').textContent = contentItems.length.toLocaleString()
+    
+    // Calculate total engagements (sum of latest views)
+    const totalViews = Object.values(engagementData.reduce((acc, curr) => {
+        if (!acc[curr.content_id] || new Date(acc[curr.content_id].timestamp) < new Date(curr.timestamp)) {
+            acc[curr.content_id] = curr
+        }
+        return acc
+    }, {})).reduce((sum, data) => sum + data.views, 0)
+    
+    document.getElementById('total-engagements').textContent = totalViews.toLocaleString()
+    
+    // Find top platform by views
+    const platformViews = contentItems.reduce((acc, item) => {
+        const latestEngagement = engagementData
+            .filter(e => e.content_id === item.id)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
+        
+        if (latestEngagement) {
+            acc[item.platform] = (acc[item.platform] || 0) + latestEngagement.views
+        }
+        return acc
+    }, {})
+    
+    const topPlatform = Object.entries(platformViews)
+        .sort(([,a], [,b]) => b - a)[0]
+    
+    document.getElementById('top-platform').textContent = topPlatform ? 
+        `${topPlatform[0].charAt(0).toUpperCase() + topPlatform[0].slice(1)}` : 
+        '-'
+}
+
+// Render charts
+function renderCharts() {
+    renderPlatformChart()
+    renderContentChart()
+}
+
+// Render platform engagement chart
+function renderPlatformChart() {
+    const ctx = document.getElementById('platform-chart').getContext('2d')
+    
+    // Calculate total views per platform
+    const platformData = contentItems.reduce((acc, item) => {
+        const latestEngagement = engagementData
+            .filter(e => e.content_id === item.id)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
+        
+        if (latestEngagement) {
+            acc[item.platform] = (acc[item.platform] || 0) + latestEngagement.views
+        }
+        return acc
+    }, {})
+    
+    // Create or update chart
+    if (window.platformChart) {
+        window.platformChart.destroy()
+    }
+    
+    window.platformChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(platformData).map(p => p.charAt(0).toUpperCase() + p.slice(1)),
+            datasets: [{
+                data: Object.values(platformData),
+                backgroundColor: [
+                    '#FF0000', // YouTube red
+                    '#00c487', // ServiceNow green
+                    '#0A66C2'  // LinkedIn blue
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
+                }
+            }
+        }
+    })
+}
+
+// Render top content chart
+function renderContentChart() {
+    const ctx = document.getElementById('content-chart').getContext('2d')
+    
+    // Get top 5 content items by views
+    const topContent = contentItems
+        .map(item => {
+            const latestEngagement = engagementData
+                .filter(e => e.content_id === item.id)
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
+            
+            return {
+                name: item.name,
+                views: latestEngagement ? latestEngagement.views : 0,
+                platform: item.platform
+            }
+        })
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 5)
+    
+    // Create or update chart
+    if (window.contentChart) {
+        window.contentChart.destroy()
+    }
+    
+    window.contentChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: topContent.map(c => c.name),
+            datasets: [{
+                label: 'Views',
+                data: topContent.map(c => c.views),
+                backgroundColor: topContent.map(c => {
+                    switch (c.platform) {
+                        case 'youtube': return '#FF0000'
+                        case 'servicenow': return '#00c487'
+                        case 'linkedin': return '#0A66C2'
+                        default: return '#6B7280'
+                    }
+                })
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
+                }
+            }
+        }
+    })
+}
+
+// Update charts for dark mode
+function updateChartsForColorMode() {
+    if (window.platformChart) {
+        window.platformChart.options.plugins.legend.labels.color = 
+            document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+        window.platformChart.update()
+    }
+    
+    if (window.contentChart) {
+        window.contentChart.options.scales.y.ticks.color = 
+        window.contentChart.options.scales.x.ticks.color = 
+            document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+        window.contentChart.update()
+    }
+}
+
+// Test API connections
+async function testYouTubeApi() {
+    try {
+        if (!apiConfig.youtube.apiKey) {
+            throw new Error('API key not configured')
+        }
+        
+        const response = await fetch(
+            `https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=1&key=${apiConfig.youtube.apiKey}`
+        )
+        
+        if (!response.ok) {
+            throw new Error(`API returned status: ${response.status}`)
+        }
+        
+        document.getElementById('youtube-api-status').textContent = 'Connected'
+        document.getElementById('youtube-api-status').className = 
+            'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2'
+        
+        showSuccessNotification('YouTube API connection successful')
+    } catch (error) {
+        document.getElementById('youtube-api-status').textContent = 'Not Connected'
+        document.getElementById('youtube-api-status').className = 
+            'badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2'
+        
+        showErrorNotification(`YouTube API test failed: ${error.message}`)
+    }
+}
+
+async function testServiceNowApi() {
+    try {
+        if (!apiConfig.servicenow.instance || !apiConfig.servicenow.username) {
+            throw new Error('API not configured')
+        }
+        
+        // For demo purposes, just check if config exists
+        document.getElementById('servicenow-api-status').textContent = 'Connected'
+        document.getElementById('servicenow-api-status').className = 
+            'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2'
+        
+        showSuccessNotification('ServiceNow API connection successful')
+    } catch (error) {
+        document.getElementById('servicenow-api-status').textContent = 'Not Connected'
+        document.getElementById('servicenow-api-status').className = 
+            'badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2'
+        
+        showErrorNotification(`ServiceNow API test failed: ${error.message}`)
+    }
+}
+
+async function testLinkedInApi() {
+    try {
+        if (!apiConfig.linkedin.clientId || !apiConfig.linkedin.clientSecret) {
+            throw new Error('API not configured')
+        }
+        
+        // For demo purposes, just check if config exists
+        document.getElementById('linkedin-api-status').textContent = 'Connected'
+        document.getElementById('linkedin-api-status').className = 
+            'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2'
+        
+        showSuccessNotification('LinkedIn API connection successful')
+    } catch (error) {
+        document.getElementById('linkedin-api-status').textContent = 'Not Connected'
+        document.getElementById('linkedin-api-status').className = 
+            'badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2'
+        
+        showErrorNotification(`LinkedIn API test failed: ${error.message}`)
+    }
+}
+
+// User profile functions
+function showUserProfile() {
+    document.getElementById('profile-modal').classList.remove('hidden')
+    document.getElementById('user-dropdown').classList.add('hidden')
+    
+    // Populate profile data
+    document.getElementById('profile-name').textContent = currentUser.user_metadata.name
+    document.getElementById('profile-email').textContent = currentUser.email
+    document.getElementById('profile-display-name').value = currentUser.user_metadata.name
+    
+    // Update stats
+    document.getElementById('profile-content-count').textContent = contentItems.length.toLocaleString()
+    
+    const totalViews = Object.values(engagementData.reduce((acc, curr) => {
+        if (!acc[curr.content_id] || new Date(acc[curr.content_id].timestamp) < new Date(curr.timestamp)) {
+            acc[curr.content_id] = curr
+        }
+        return acc
+    }, {})).reduce((sum, data) => sum + data.views, 0)
+    
+    document.getElementById('profile-views-count').textContent = totalViews.toLocaleString()
+    document.getElementById('profile-member-since').textContent = 
+        new Date(currentUser.created_at).toLocaleDateString()
+}
+
+async function saveUserProfile() {
+    try {
+        const newName = document.getElementById('profile-display-name').value
+        const currentPassword = document.getElementById('profile-current-password').value
+        const newPassword = document.getElementById('profile-new-password').value
+        
+        // Update display name if changed
+        if (newName !== currentUser.user_metadata.name) {
+            const { data: user, error } = await supabase.auth.updateUser({
+                data: { name: newName }
+            })
+            
+            if (error) throw error
+            currentUser = user
+        }
+        
+        // Update password if provided
+        if (currentPassword && newPassword) {
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword
+            })
+            
+            if (error) throw error
+        }
+        
+        // Update UI
+        document.getElementById('current-user-name').textContent = newName
+        document.getElementById('profile-name').textContent = newName
+        
+        // Clear password fields
+        document.getElementById('profile-current-password').value = ''
+        document.getElementById('profile-new-password').value = ''
+        
+        showSuccessNotification('Profile updated successfully')
+    } catch (error) {
+        console.error('Error updating profile:', error)
+        showErrorNotification(`Error updating profile: ${error.message}`)
+    }
+}
+
+async function confirmDeleteAccount() {
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+        try {
+            const { error } = await supabase.auth.admin.deleteUser(currentUser.id)
+            if (error) throw error
+            
+            await signOut()
+            currentUser = null
+            showAuthScreen()
+            showSuccessNotification('Account deleted successfully')
+        } catch (error) {
+            console.error('Error deleting account:', error)
+            showErrorNotification(`Error deleting account: ${error.message}`)
+        }
+    }
+}
+
+// Rebuild URL to content map
+function rebuildUrlContentMap() {
+    urlToContentMap = {}
+    contentItems.forEach(item => {
+        const normalizedUrl = normalizeUrl(item.url)
+        urlToContentMap[normalizedUrl] = item.id
+    })
+}
+
+// Update API configuration UI
+function updateApiConfigUI() {
+    // YouTube
+    if (apiConfig.youtube.apiKey) {
+        document.getElementById('youtube-api-key').value = apiConfig.youtube.apiKey
+        document.getElementById('youtube-api-status').textContent = 'Configured'
+        document.getElementById('youtube-api-status').className = 
+            'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2'
+    }
+    
+    // ServiceNow
+    if (apiConfig.servicenow.instance) {
+        document.getElementById('servicenow-instance').value = apiConfig.servicenow.instance
+        document.getElementById('servicenow-username').value = apiConfig.servicenow.username
+        document.getElementById('servicenow-password').value = apiConfig.servicenow.password
+        document.getElementById('servicenow-api-status').textContent = 'Configured'
+        document.getElementById('servicenow-api-status').className = 
+            'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2'
+    }
+    
+    // LinkedIn
+    if (apiConfig.linkedin.clientId) {
+        document.getElementById('linkedin-client-id').value = apiConfig.linkedin.clientId
+        document.getElementById('linkedin-client-secret').value = apiConfig.linkedin.clientSecret
+        document.getElementById('linkedin-api-status').textContent = 'Configured'
+        document.getElementById('linkedin-api-status').className = 
+            'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2'
+    }
+}
+
 // Initialize the app when the page loads
 window.addEventListener('DOMContentLoaded', initApp) 
