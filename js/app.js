@@ -333,5 +333,171 @@ function toggleDarkMode(e) {
     }
 }
 
+// Set up main application event listeners
+function setupEventListeners() {
+    // User menu dropdown
+    const userMenuButton = document.getElementById('user-menu-button')
+    const userDropdown = document.getElementById('user-dropdown')
+    
+    userMenuButton.addEventListener('click', () => {
+        userDropdown.classList.toggle('hidden')
+    })
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+            userDropdown.classList.add('hidden')
+        }
+    })
+    
+    // Logout button
+    document.getElementById('logout-button').addEventListener('click', async () => {
+        try {
+            await signOut()
+            currentUser = null
+            showAuthScreen()
+        } catch (error) {
+            console.error('Error signing out:', error)
+            showErrorNotification('Error signing out')
+        }
+    })
+    
+    // Content form
+    const contentForm = document.getElementById('content-form')
+    const contentUrlField = document.getElementById('content-url')
+    
+    contentForm.addEventListener('submit', handleContentFormSubmit)
+    contentUrlField.addEventListener('blur', checkForDuplicateUrl)
+    document.getElementById('fetch-content-info').addEventListener('click', fetchContentInfo)
+    
+    // Data actions
+    document.getElementById('refresh-data').addEventListener('click', refreshEngagementData)
+    document.getElementById('refresh-all-data').addEventListener('click', refreshEngagementData)
+    
+    // Settings and modals
+    const apiSettingsSection = document.getElementById('api-settings')
+    const showSettingsBtn = document.getElementById('show-settings-link')
+    const hideSettingsBtn = document.getElementById('hide-settings')
+    
+    showSettingsBtn.addEventListener('click', () => {
+        apiSettingsSection.classList.remove('hidden')
+        userDropdown.classList.add('hidden')
+    })
+    
+    hideSettingsBtn.addEventListener('click', () => {
+        apiSettingsSection.classList.add('hidden')
+    })
+    
+    // API testing buttons
+    document.getElementById('test-youtube-api').addEventListener('click', testYouTubeApi)
+    document.getElementById('test-servicenow-api').addEventListener('click', testServiceNowApi)
+    document.getElementById('test-linkedin-api').addEventListener('click', testLinkedInApi)
+    
+    // Modal close buttons
+    document.getElementById('close-modal').addEventListener('click', () => {
+        document.getElementById('content-modal').classList.add('hidden')
+    })
+    
+    // User profile
+    document.getElementById('user-profile-link').addEventListener('click', showUserProfile)
+    document.getElementById('close-profile-modal').addEventListener('click', () => {
+        document.getElementById('profile-modal').classList.add('hidden')
+    })
+    document.getElementById('save-profile').addEventListener('click', saveUserProfile)
+    document.getElementById('delete-account').addEventListener('click', confirmDeleteAccount)
+    
+    // Dark mode toggle
+    const darkModeToggle = document.getElementById('dark-mode-toggle')
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('change', toggleDarkMode)
+        
+        // Set initial state based on saved preference
+        if (document.documentElement.classList.contains('dark')) {
+            darkModeToggle.checked = true
+        }
+    }
+    
+    // Platform selection change
+    document.getElementById('content-source').addEventListener('change', () => {
+        updateUrlPlaceholder()
+        
+        // Show/hide duration field based on platform
+        const platform = document.getElementById('content-source').value
+        const durationContainer = document.getElementById('duration-container')
+        if (platform === 'youtube') {
+            durationContainer.classList.remove('hidden')
+        } else {
+            durationContainer.classList.add('hidden')
+        }
+    })
+    
+    // Initialize URL placeholder
+    updateUrlPlaceholder()
+}
+
+// Update URL placeholder based on selected platform
+function updateUrlPlaceholder() {
+    const platform = document.getElementById('content-source').value
+    const urlField = document.getElementById('content-url')
+    
+    switch (platform) {
+        case 'youtube':
+            urlField.placeholder = 'https://youtube.com/watch?v=XXXX'
+            break
+        case 'servicenow':
+            urlField.placeholder = 'https://community.servicenow.com/blog/XXXX'
+            break
+        case 'linkedin':
+            urlField.placeholder = 'https://www.linkedin.com/posts/XXXX'
+            break
+        default:
+            urlField.placeholder = 'https://example.com'
+    }
+}
+
+// Check for duplicate URL
+function checkForDuplicateUrl() {
+    const url = document.getElementById('content-url').value
+    if (!url) return
+    
+    const normalizedUrl = normalizeUrl(url)
+    const existingContentId = urlToContentMap[normalizedUrl]
+    
+    if (existingContentId) {
+        // Show warning
+        const duplicateWarning = document.getElementById('duplicate-warning')
+        duplicateWarning.classList.remove('hidden')
+        
+        // Find the existing content item
+        const existingContent = contentItems.find(item => item.id === existingContentId)
+        if (existingContent) {
+            duplicateWarning.textContent = `Warning: This URL has already been added as "${existingContent.name}".`
+        }
+    } else {
+        // Hide warning
+        document.getElementById('duplicate-warning').classList.add('hidden')
+    }
+}
+
+// Normalize URL (remove tracking parameters, fragments, etc.)
+function normalizeUrl(url) {
+    try {
+        const urlObj = new URL(url)
+        // Remove common tracking parameters
+        urlObj.searchParams.delete('utm_source')
+        urlObj.searchParams.delete('utm_medium')
+        urlObj.searchParams.delete('utm_campaign')
+        urlObj.searchParams.delete('utm_content')
+        urlObj.searchParams.delete('utm_term')
+        urlObj.searchParams.delete('feature')
+        // Remove hash
+        urlObj.hash = ''
+        return urlObj.toString()
+    } catch (e) {
+        // If URL parsing fails, return original
+        return url
+    }
+}
+
 // Initialize the app when the page loads
 window.addEventListener('DOMContentLoaded', initApp) 
