@@ -35,6 +35,9 @@ async function initApp() {
         showAuthScreen()
     }
     
+    // Set up event listeners
+    document.getElementById('save-api-config').addEventListener('click', handleApiConfigSave)
+    
     setupEventListeners()
     setupCollapsibleSections()
 }
@@ -206,7 +209,7 @@ async function handleContentDeletion(id) {
 }
 
 // Save API configuration
-async function saveApiConfig() {
+async function handleApiConfigSave() {
     try {
         // Save YouTube config
         await saveApiConfig(currentUser.id, 'youtube', {
