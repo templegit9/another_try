@@ -51,14 +51,21 @@ async function handleLogin(e) {
     const rememberMe = document.getElementById('remember-me').checked
     
     try {
-        const user = await signIn(email, password)
-        await loginUser(user)
+        const { data, error } = await signIn(email, password)
+        if (error) throw error
         
-        // Clear form and error
-        e.target.reset()
-        document.getElementById('login-error').classList.add('hidden')
+        if (data.user) {
+            await loginUser(data.user)
+            
+            // Clear form and error
+            e.target.reset()
+            document.getElementById('login-error').classList.add('hidden')
+        } else {
+            throw new Error('Login failed - no user data returned')
+        }
     } catch (error) {
-        document.getElementById('login-error').textContent = error.message
+        console.error('Login error:', error)
+        document.getElementById('login-error').textContent = error.message || 'Failed to login'
         document.getElementById('login-error').classList.remove('hidden')
     }
 }

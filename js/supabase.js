@@ -21,14 +21,12 @@ export async function signUp(email, password, name) {
     return user
 }
 
+// Sign in with email and password
 export async function signIn(email, password) {
-    const { data: { user }, error } = await supabase.auth.signInWithPassword({
+    return await supabase.auth.signInWithPassword({
         email,
         password
     })
-    
-    if (error) throw error
-    return user
 }
 
 export async function signOut() {
