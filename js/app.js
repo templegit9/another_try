@@ -99,26 +99,47 @@ async function handleRegister(e) {
     const password = document.getElementById('register-password').value
     const confirmPassword = document.getElementById('register-confirm-password').value
     
-    if (password !== confirmPassword) {
-        document.getElementById('register-error').textContent = 'Passwords do not match'
-        document.getElementById('register-error').classList.remove('hidden')
-        return
-    }
+    // Show loading state
+    const submitButton = e.target.querySelector('button[type="submit"]')
+    const originalText = submitButton.innerHTML
+    submitButton.disabled = true
+    submitButton.innerHTML = '<span class="material-icons animate-spin">refresh</span> Creating Account...'
     
     try {
-        await signUp(email, password, name)
+        if (password !== confirmPassword) {
+            throw new Error('Passwords do not match')
+        }
         
-        // Show success message and switch to login
-        const registerError = document.getElementById('register-error')
-        registerError.textContent = 'Account created successfully! Please log in.'
-        registerError.classList.remove('hidden')
-        registerError.classList.add('text-green-500')
+        const { data, error } = await signUp(email, password, name)
+        if (error) throw error
         
-        // Switch to login tab
-        document.getElementById('login-tab').click()
+        if (data.user) {
+            // Show success message
+            const registerError = document.getElementById('register-error')
+            registerError.textContent = 'Account created successfully! Please check your email for verification.'
+            registerError.classList.remove('hidden', 'text-red-500')
+            registerError.classList.add('text-green-500')
+            
+            // Clear form
+            e.target.reset()
+            
+            // Switch to login tab after a delay
+            setTimeout(() => {
+                document.getElementById('login-tab').click()
+            }, 3000)
+        } else {
+            throw new Error('Registration failed - please try again')
+        }
     } catch (error) {
-        document.getElementById('register-error').textContent = error.message
-        document.getElementById('register-error').classList.remove('hidden')
+        console.error('Registration error:', error)
+        const registerError = document.getElementById('register-error')
+        registerError.textContent = error.message
+        registerError.classList.remove('hidden', 'text-green-500')
+        registerError.classList.add('text-red-500')
+    } finally {
+        // Reset button state
+        submitButton.disabled = false
+        submitButton.innerHTML = originalText
     }
 }
 

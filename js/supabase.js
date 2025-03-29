@@ -18,13 +18,15 @@ export async function signUp(email, password, name) {
         password,
         options: {
             data: {
-                name
-            }
+                name: name,
+                full_name: name
+            },
+            emailRedirectTo: window.location.origin
         }
     })
     
     if (error) throw error
-    return data.user
+    return data
 }
 
 // Sign in with email and password
