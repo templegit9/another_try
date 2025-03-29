@@ -26,7 +26,13 @@ export async function signUp(email, password, name) {
     })
     
     if (error) throw error
-    return data
+    
+    // Check if the sign up was successful
+    if (!data?.user) {
+        throw new Error('Registration failed - no user data returned')
+    }
+    
+    return { data, error }
 }
 
 // Sign in with email and password

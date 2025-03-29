@@ -113,23 +113,20 @@ async function handleRegister(e) {
         const { data, error } = await signUp(email, password, name)
         if (error) throw error
         
-        if (data.user) {
-            // Show success message
-            const registerError = document.getElementById('register-error')
-            registerError.textContent = 'Account created successfully! Please check your email for verification.'
-            registerError.classList.remove('hidden', 'text-red-500')
-            registerError.classList.add('text-green-500')
-            
-            // Clear form
-            e.target.reset()
-            
-            // Switch to login tab after a delay
-            setTimeout(() => {
-                document.getElementById('login-tab').click()
-            }, 3000)
-        } else {
-            throw new Error('Registration failed - please try again')
-        }
+        // Show success message
+        const registerError = document.getElementById('register-error')
+        registerError.textContent = 'Account created successfully! Please check your email for verification.'
+        registerError.classList.remove('hidden', 'text-red-500')
+        registerError.classList.add('text-green-500')
+        
+        // Clear form
+        e.target.reset()
+        
+        // Switch to login tab after a delay
+        setTimeout(() => {
+            document.getElementById('login-tab').click()
+        }, 3000)
+        
     } catch (error) {
         console.error('Registration error:', error)
         const registerError = document.getElementById('register-error')
