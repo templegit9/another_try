@@ -123,9 +123,20 @@ export async function addEngagementData(engagementData) {
 export async function getEngagementData(userId) {
     const { data, error } = await supabase
         .from('engagement_data')
-        .select('*')
-        .eq('user_id', userId)
-        .order('timestamp', { ascending: false })
+        .select(`
+            id,
+            content_id,
+            views,
+            likes,
+            comments,
+            watch_time,
+            timestamp,
+            content_items (
+                id,
+                user_id
+            )
+        `)
+        .eq('content_items.user_id', userId)
     
     if (error) throw error
     return data

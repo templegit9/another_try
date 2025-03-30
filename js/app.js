@@ -972,7 +972,6 @@ async function fetchEngagementData(items) {
                 const { data: newEngagement, error } = await supabase
                     .from('engagement_data')
                     .insert([{
-                        user_id: currentUser.id,
                         content_id: item.id,
                         views: data.views || 0,
                         likes: data.likes || 0,
@@ -980,7 +979,15 @@ async function fetchEngagementData(items) {
                         watch_time: data.watchTime || 0,
                         timestamp: new Date().toISOString()
                     }])
-                    .select()
+                    .select(`
+                        id,
+                        content_id,
+                        views,
+                        likes,
+                        comments,
+                        watch_time,
+                        timestamp
+                    `)
                     .single();
                 
                 if (error) {
