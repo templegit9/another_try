@@ -21,7 +21,10 @@ let urlToContentMap = {};
 let apiConfig = {
     youtube: { apiKey: null },
     servicenow: { instance: null, username: null, password: null },
-    linkedin: { clientId: null, clientSecret: null, accessToken: null }
+    linkedin: { clientId: null, clientSecret: null, accessToken: null },
+    reddit: { clientId: null, clientSecret: null, username: null },
+    twitter: { apiKey: null, apiKeySecret: null, bearerToken: null },
+    slack: { botToken: null, signingSecret: null }
 };
 
 // Initialize the app
@@ -338,34 +341,182 @@ async function handleContentDeletion(id) {
 
 // Save API configuration
 async function handleApiConfigSave() {
-    try {
-        // Save YouTube config
-        await saveApiConfig(currentUser.id, 'youtube', {
+    const config = {
+        youtube: {
             apiKey: document.getElementById('youtube-api-key').value
-        })
-        
-        // Save ServiceNow config
-        await saveApiConfig(currentUser.id, 'servicenow', {
-            instance: document.getElementById('servicenow-instance').value,
+        },
+        servicenow: {
+            instanceUrl: document.getElementById('servicenow-instance-url').value,
             username: document.getElementById('servicenow-username').value,
             password: document.getElementById('servicenow-password').value
-        })
-        
-        // Save LinkedIn config
-        await saveApiConfig(currentUser.id, 'linkedin', {
+        },
+        linkedin: {
             clientId: document.getElementById('linkedin-client-id').value,
             clientSecret: document.getElementById('linkedin-client-secret').value
-        })
+        },
+        reddit: {
+            clientId: document.getElementById('reddit-client-id').value,
+            clientSecret: document.getElementById('reddit-client-secret').value,
+            username: document.getElementById('reddit-username').value
+        },
+        twitter: {
+            apiKey: document.getElementById('twitter-api-key').value,
+            apiKeySecret: document.getElementById('twitter-api-key-secret').value,
+            bearerToken: document.getElementById('twitter-bearer-token').value
+        },
+        slack: {
+            botToken: document.getElementById('slack-bot-token').value,
+            signingSecret: document.getElementById('slack-signing-secret').value
+        }
+    };
+
+    try {
+        const { data, error } = await supabase
+            .from('user_api_config')
+            .upsert({ user_id: currentUser.id, config: config }, { onConflict: 'user_id' });
+
+        if (error) throw error;
+        showNotification('API configuration saved successfully', 'success');
         
-        // Update local state
-        await loadUserData()
+        // Update global apiConfig
+        apiConfig = config;
         
-        showSuccessNotification('API configuration saved successfully')
+        // Update API status indicators
+        updateApiStatusIndicators();
     } catch (error) {
-        console.error('Error saving API config:', error)
-        showErrorNotification('Error saving API configuration')
+        console.error('Error saving API configuration:', error);
+        showNotification('Failed to save API configuration', 'error');
     }
 }
+
+function updateApiStatusIndicators() {
+    // Update YouTube status
+    const youtubeStatus = document.getElementById('youtube-api-status');
+    if (apiConfig.youtube?.apiKey) {
+        youtubeStatus.textContent = 'Configured';
+        youtubeStatus.className = 'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2';
+    }
+
+    // Update ServiceNow status
+    const servicenowStatus = document.getElementById('servicenow-api-status');
+    if (apiConfig.servicenow?.instanceUrl && apiConfig.servicenow?.username && apiConfig.servicenow?.password) {
+        servicenowStatus.textContent = 'Configured';
+        servicenowStatus.className = 'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2';
+    }
+
+    // Update LinkedIn status
+    const linkedinStatus = document.getElementById('linkedin-api-status');
+    if (apiConfig.linkedin?.clientId && apiConfig.linkedin?.clientSecret) {
+        linkedinStatus.textContent = 'Configured';
+        linkedinStatus.className = 'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2';
+    }
+
+    // Update Reddit status
+    const redditStatus = document.getElementById('reddit-api-status');
+    if (apiConfig.reddit?.clientId && apiConfig.reddit?.clientSecret && apiConfig.reddit?.username) {
+        redditStatus.textContent = 'Configured';
+        redditStatus.className = 'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2';
+    }
+
+    // Update Twitter status
+    const twitterStatus = document.getElementById('twitter-api-status');
+    if (apiConfig.twitter?.apiKey && apiConfig.twitter?.apiKeySecret && apiConfig.twitter?.bearerToken) {
+        twitterStatus.textContent = 'Configured';
+        twitterStatus.className = 'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2';
+    }
+
+    // Update Slack status
+    const slackStatus = document.getElementById('slack-api-status');
+    if (apiConfig.slack?.botToken && apiConfig.slack?.signingSecret) {
+        slackStatus.textContent = 'Configured';
+        slackStatus.className = 'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2';
+    }
+}
+
+// Test API Configuration Functions
+async function testRedditApi() {
+    if (!apiConfig.reddit?.clientId || !apiConfig.reddit?.clientSecret || !apiConfig.reddit?.username) {
+        showNotification('Please fill in all Reddit API fields first', 'error');
+        return;
+    }
+
+    try {
+        // Test Reddit API connection
+        const response = await fetch('https://www.reddit.com/api/v1/me', {
+            headers: {
+                'Authorization': `Bearer ${apiConfig.reddit.clientId}`
+            }
+        });
+
+        if (response.ok) {
+            showNotification('Reddit API connection successful', 'success');
+        } else {
+            throw new Error('Failed to connect to Reddit API');
+        }
+    } catch (error) {
+        console.error('Error testing Reddit API:', error);
+        showNotification('Failed to connect to Reddit API', 'error');
+    }
+}
+
+async function testTwitterApi() {
+    if (!apiConfig.twitter?.apiKey || !apiConfig.twitter?.apiKeySecret || !apiConfig.twitter?.bearerToken) {
+        showNotification('Please fill in all Twitter API fields first', 'error');
+        return;
+    }
+
+    try {
+        // Test Twitter API connection
+        const response = await fetch('https://api.twitter.com/2/users/me', {
+            headers: {
+                'Authorization': `Bearer ${apiConfig.twitter.bearerToken}`
+            }
+        });
+
+        if (response.ok) {
+            showNotification('Twitter API connection successful', 'success');
+        } else {
+            throw new Error('Failed to connect to Twitter API');
+        }
+    } catch (error) {
+        console.error('Error testing Twitter API:', error);
+        showNotification('Failed to connect to Twitter API', 'error');
+    }
+}
+
+async function testSlackApi() {
+    if (!apiConfig.slack?.botToken || !apiConfig.slack?.signingSecret) {
+        showNotification('Please fill in all Slack API fields first', 'error');
+        return;
+    }
+
+    try {
+        // Test Slack API connection
+        const response = await fetch('https://slack.com/api/auth.test', {
+            headers: {
+                'Authorization': `Bearer ${apiConfig.slack.botToken}`
+            }
+        });
+
+        if (response.ok) {
+            showNotification('Slack API connection successful', 'success');
+        } else {
+            throw new Error('Failed to connect to Slack API');
+        }
+    } catch (error) {
+        console.error('Error testing Slack API:', error);
+        showNotification('Failed to connect to Slack API', 'error');
+    }
+}
+
+// Add event listeners for test buttons
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing event listeners ...
+
+    document.getElementById('test-reddit-api')?.addEventListener('click', testRedditApi);
+    document.getElementById('test-twitter-api')?.addEventListener('click', testTwitterApi);
+    document.getElementById('test-slack-api')?.addEventListener('click', testSlackApi);
+});
 
 // Utility functions
 function showSuccessNotification(message) {
@@ -636,6 +787,15 @@ function updateUrlPlaceholder() {
         case 'linkedin':
             urlField.placeholder = 'https://www.linkedin.com/posts/XXXX'
             break
+        case 'reddit':
+            urlField.placeholder = 'https://www.reddit.com/XXXX'
+            break
+        case 'twitter':
+            urlField.placeholder = 'https://twitter.com/XXXX'
+            break
+        case 'slack':
+            urlField.placeholder = 'https://slack.com/XXXX'
+            break
         default:
             urlField.placeholder = 'https://example.com'
     }
@@ -720,6 +880,18 @@ async function fetchContentInfo() {
                 contentInfo = await fetchLinkedInContentInfo(contentId)
                 break
             
+            case 'reddit':
+                contentInfo = await fetchRedditContentInfo(contentId)
+                break
+            
+            case 'twitter':
+                contentInfo = await fetchTwitterContentInfo(contentId)
+                break
+            
+            case 'slack':
+                contentInfo = await fetchSlackContentInfo(contentId)
+                break
+            
             default:
                 contentInfo = {
                     title: '',
@@ -757,54 +929,56 @@ async function fetchContentInfo() {
 // Extract content ID from URL based on platform
 function extractContentId(url, platform) {
     try {
-        const urlObj = new URL(url)
+        const urlObj = new URL(url);
         
         switch (platform) {
-            case 'youtube':
-                // Extract YouTube video ID
-                // First try: from query parameter v
-                let videoId = urlObj.searchParams.get('v')
-                
-                if (videoId) return videoId
-                
-                // Second try: from youtu.be URLs
-                if (urlObj.hostname === 'youtu.be') {
-                    return urlObj.pathname.substring(1) // Remove the leading slash
-                }
-                
-                // Third try: from /embed/ URLs
-                if (urlObj.pathname.includes('/embed/')) {
-                    return urlObj.pathname.split('/embed/')[1].split('/')[0]
-                }
-                
-                // Fourth try: from /v/ URLs
-                if (urlObj.pathname.includes('/v/')) {
-                    return urlObj.pathname.split('/v/')[1].split('/')[0]
-                }
-                
-                // Last resort: just the last part of the URL
-                return url.split('/').pop()
+            case 'youtube': {
+                // Handle both youtube.com/watch?v=ID and youtu.be/ID formats
+                const videoId = urlObj.searchParams.get('v') || urlObj.pathname.slice(1);
+                if (!videoId) throw new Error('Invalid YouTube URL');
+                return videoId;
+            }
             
-            case 'servicenow':
-                // Extract ServiceNow blog ID (last part of path)
-                return urlObj.pathname.split('/').pop()
+            case 'servicenow': {
+                // Extract article ID from ServiceNow URL
+                const match = urlObj.pathname.match(/kb_article\.do\?sys_id=([^&]+)/);
+                if (!match) throw new Error('Invalid ServiceNow URL');
+                return match[1];
+            }
             
-            case 'linkedin':
-                // Extract LinkedIn post ID (end part of URL)
-                const linkedInMatch = urlObj.pathname.match(/\/posts\/([^\/]+)/)
-                if (linkedInMatch && linkedInMatch[1]) {
-                    return linkedInMatch[1]
-                }
-                
-                // Fallback to the last segment
-                return urlObj.pathname.split('-').pop()
+            case 'linkedin': {
+                // Extract post ID from LinkedIn URL
+                const match = urlObj.pathname.match(/\/posts\/([^?/]+)/);
+                if (!match) throw new Error('Invalid LinkedIn URL');
+                return match[1];
+            }
+            
+            case 'reddit': {
+                // Handle various Reddit URL formats
+                const match = urlObj.pathname.match(/\/comments\/([a-z0-9]+)/i);
+                if (!match) throw new Error('Invalid Reddit URL');
+                return match[1];
+            }
+            
+            case 'twitter': {
+                // Handle both twitter.com and x.com URLs
+                const match = urlObj.pathname.match(/\/[^/]+\/status\/(\d+)/);
+                if (!match) throw new Error('Invalid Twitter URL');
+                return match[1];
+            }
+            
+            case 'slack': {
+                // Extract channel ID and message timestamp from Slack URL
+                const match = urlObj.pathname.match(/\/archives\/([A-Z0-9]+)\/p(\d+)/i);
+                if (!match) throw new Error('Invalid Slack URL');
+                return `${match[1]}:${match[2]}`;
+            }
             
             default:
-                return url
+                throw new Error(`Unsupported platform: ${platform}`);
         }
-    } catch (e) {
-        console.error('Error extracting content ID:', e)
-        return url
+    } catch (error) {
+        throw new Error(`Failed to extract content ID: ${error.message}`);
     }
 }
 
@@ -895,6 +1069,114 @@ async function fetchLinkedInContentInfo(postId) {
     }
 }
 
+// Fetch Reddit content information
+async function fetchRedditContentInfo(postId) {
+    if (!apiConfig.reddit?.clientId || !apiConfig.reddit?.clientSecret) {
+        throw new Error('Reddit API not configured');
+    }
+
+    try {
+        const response = await fetch(`https://www.reddit.com/api/info.json?id=t3_${postId}`, {
+            headers: {
+                'Authorization': `Bearer ${apiConfig.reddit.clientId}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch Reddit post info');
+        }
+
+        const data = await response.json();
+        const post = data.data.children[0].data;
+
+        return {
+            title: post.title,
+            url: `https://reddit.com${post.permalink}`,
+            type: 'reddit',
+            timestamp: new Date(post.created_utc * 1000).toISOString()
+        };
+    } catch (error) {
+        console.error('Error fetching Reddit content info:', error);
+        throw error;
+    }
+}
+
+// Fetch Twitter content information
+async function fetchTwitterContentInfo(tweetId) {
+    if (!apiConfig.twitter?.bearerToken) {
+        throw new Error('Twitter API not configured');
+    }
+
+    try {
+        const response = await fetch(`https://api.twitter.com/2/tweets/${tweetId}/public_metrics`, {
+            headers: {
+                'Authorization': `Bearer ${apiConfig.twitter.bearerToken}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch tweet info');
+        }
+
+        const data = await response.json();
+        const metrics = data.data;
+
+        // Calculate estimated watch time based on video duration or reading time
+        const avgReadTimeSeconds = 30; // Average time spent reading a tweet
+        const watchTimeHours = (avgReadTimeSeconds * metrics.impression_count) / 3600;
+
+        return {
+            title: metrics.impression_count.toLocaleString() + ' views',
+            url: `https://twitter.com/user/status/${tweetId}`,
+            type: 'twitter',
+            timestamp: new Date(metrics.created_at).toISOString()
+        };
+    } catch (error) {
+        console.error('Error fetching Twitter content info:', error);
+        throw error;
+    }
+}
+
+// Fetch Slack content information
+async function fetchSlackContentInfo(messageId, channelId) {
+    if (!apiConfig.slack?.botToken) {
+        throw new Error('Slack API not configured');
+    }
+
+    try {
+        const response = await fetch('https://slack.com/api/conversations.history', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiConfig.slack.botToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                channel: channelId,
+                latest: messageId,
+                limit: 1,
+                inclusive: true
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch Slack message info');
+        }
+
+        const data = await response.json();
+        const message = data.messages[0];
+
+        return {
+            title: message.text.substring(0, 100) + '...',
+            url: `https://slack.com/archives/${channelId}/p${messageId}`,
+            type: 'slack',
+            timestamp: new Date(message.ts * 1000).toISOString()
+        };
+    } catch (error) {
+        console.error('Error fetching Slack content info:', error);
+        throw error;
+    }
+}
+
 // Refresh engagement data for content items
 async function refreshEngagementData(e) {
     if (e) e.preventDefault()
@@ -964,6 +1246,30 @@ async function fetchEngagementData(items) {
                         continue;
                     }
                     data = await fetchLinkedInEngagement(item);
+                    break;
+                
+                case 'reddit':
+                    if (!apiConfig.reddit.clientId || !apiConfig.reddit.clientSecret) {
+                        console.warn('Reddit API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchRedditEngagement(item);
+                    break;
+                
+                case 'twitter':
+                    if (!apiConfig.twitter.apiKey || !apiConfig.twitter.apiKeySecret) {
+                        console.warn('Twitter API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchTwitterEngagement(item);
+                    break;
+                
+                case 'slack':
+                    if (!apiConfig.slack.botToken || !apiConfig.slack.signingSecret) {
+                        console.warn('Slack API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchSlackEngagement(item);
                     break;
             }
             
@@ -1104,6 +1410,69 @@ async function fetchLinkedInEngagement(item) {
     }
 }
 
+// Fetch Reddit engagement data
+async function fetchRedditEngagement(item) {
+    if (!apiConfig.reddit.clientId || !apiConfig.reddit.clientSecret) {
+        throw new Error('Reddit API not configured')
+    }
+    
+    // For demo purposes, return simulated data with estimated watch time
+    // In production, this would make an actual API call
+    const views = Math.floor(Math.random() * 1000)
+    // Estimate 2-5 minutes per view for posts
+    const avgReadTimeMinutes = Math.random() * 3 + 2
+    const watchTimeHours = (views * avgReadTimeMinutes) / 60
+    
+    return {
+        views: views,
+        likes: Math.floor(Math.random() * 200),
+        comments: Math.floor(Math.random() * 50),
+        watchTime: watchTimeHours
+    }
+}
+
+// Fetch Twitter engagement data
+async function fetchTwitterEngagement(item) {
+    if (!apiConfig.twitter.apiKey || !apiConfig.twitter.apiKeySecret) {
+        throw new Error('Twitter API not configured')
+    }
+    
+    // For demo purposes, return simulated data with estimated watch time
+    // In production, this would make an actual API call
+    const views = Math.floor(Math.random() * 1000)
+    // Estimate 2-5 minutes per view for tweets
+    const avgReadTimeMinutes = Math.random() * 3 + 2
+    const watchTimeHours = (views * avgReadTimeMinutes) / 60
+    
+    return {
+        views: views,
+        likes: Math.floor(Math.random() * 200),
+        comments: Math.floor(Math.random() * 50),
+        watchTime: watchTimeHours
+    }
+}
+
+// Fetch Slack engagement data
+async function fetchSlackEngagement(item) {
+    if (!apiConfig.slack.botToken || !apiConfig.slack.signingSecret) {
+        throw new Error('Slack API not configured')
+    }
+    
+    // For demo purposes, return simulated data with estimated watch time
+    // In production, this would make an actual API call
+    const views = Math.floor(Math.random() * 1000)
+    // Estimate 2-5 minutes per view for messages
+    const avgReadTimeMinutes = Math.random() * 3 + 2
+    const watchTimeHours = (views * avgReadTimeMinutes) / 60
+    
+    return {
+        views: views,
+        likes: Math.floor(Math.random() * 200),
+        comments: Math.floor(Math.random() * 50),
+        watchTime: watchTimeHours
+    }
+}
+
 // Render content items in the table
 function renderContentItems() {
     const contentList = document.getElementById('content-list')
@@ -1142,55 +1511,124 @@ function renderContentItems() {
 
 // Render engagement data in the table
 function renderEngagementData() {
-    const engagementList = document.getElementById('engagement-list')
-    engagementList.innerHTML = ''
-    
-    // Group engagement data by content_id and get latest for each
-    const latestEngagements = engagementData.reduce((acc, curr) => {
-        if (!acc[curr.content_id] || new Date(acc[curr.content_id].timestamp) < new Date(curr.timestamp)) {
-            acc[curr.content_id] = curr
+    const engagementContainer = document.getElementById('engagement-data');
+    if (!engagementContainer) return;
+
+    // Group engagement data by content ID
+    const groupedData = {};
+    engagementData.forEach(data => {
+        if (!groupedData[data.content_id]) {
+            groupedData[data.content_id] = [];
         }
-        return acc
-    }, {})
+        groupedData[data.content_id].push(data);
+    });
+
+    const html = Object.entries(groupedData).map(([contentId, dataPoints]) => {
+        // Find the corresponding content item
+        const contentItem = contentItems.find(item => item.id === contentId);
+        if (!contentItem) return '';
+
+        // Sort data points by timestamp (newest first)
+        dataPoints.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const latestData = dataPoints[0];
+
+        return `
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4">
+                <h3 class="text-lg font-semibold mb-4 dark:text-white">${contentItem.title}</h3>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    ${renderMetricCard('Views', latestData.views, 'visibility')}
+                    ${renderMetricCard('Likes', latestData.likes, 'thumb_up')}
+                    ${renderMetricCard('Comments', latestData.comments, 'comment')}
+                    ${renderMetricCard('Shares', latestData.shares, 'share')}
+                </div>
+                
+                ${renderWatchTimeMetric(latestData.watch_time)}
+                ${renderEngagementChart(contentId, dataPoints)}
+                ${renderPlatformSpecificMetrics(contentItem, latestData)}
+            </div>
+        `;
+    }).join('');
+
+    engagementContainer.innerHTML = html;
     
-    Object.values(latestEngagements).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(data => {
-        const content = contentItems.find(item => item.id === data.content_id)
-        if (!content) return
-        
-        const row = document.createElement('tr')
-        row.innerHTML = `
-            <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-900 dark:text-white">${content.name}</div>
-            </td>
-            <td class="px-6 py-4">
-                <span class="badge ${content.platform}">${content.platform}</span>
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                ${data.views.toLocaleString()}
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                ${formatWatchTime(data.watch_time || 0)}
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                ${data.likes.toLocaleString()}
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                ${data.comments.toLocaleString()}
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                ${new Date(data.timestamp).toLocaleString()}
-            </td>
-        `
-        engagementList.appendChild(row)
-    })
+    // Initialize charts after rendering
+    Object.keys(groupedData).forEach(contentId => {
+        initializeCharts(contentId, groupedData[contentId]);
+    });
 }
 
-// Format watch time in hours and minutes
-function formatWatchTime(hours) {
-    if (!hours || hours === 0) return '0h'
-    const wholeHours = Math.floor(hours)
-    const minutes = Math.round((hours - wholeHours) * 60)
-    return minutes > 0 ? `${wholeHours}h ${minutes}m` : `${wholeHours}h`
+function renderPlatformSpecificMetrics(contentItem, latestData) {
+    switch (contentItem.type) {
+        case 'reddit':
+            return `
+                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <h4 class="text-sm font-medium mb-2 dark:text-white">Reddit-Specific Metrics</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${renderMetricCard('Upvote Ratio', (latestData.likes / (latestData.likes + latestData.dislikes) * 100).toFixed(1) + '%', 'trending_up')}
+                        ${renderMetricCard('Awards', latestData.awards || 0, 'stars')}
+                    </div>
+                </div>
+            `;
+        
+        case 'twitter':
+            return `
+                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <h4 class="text-sm font-medium mb-2 dark:text-white">Twitter-Specific Metrics</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${renderMetricCard('Retweets', latestData.shares, 'repeat')}
+                        ${renderMetricCard('Quote Tweets', latestData.quotes || 0, 'format_quote')}
+                    </div>
+                </div>
+            `;
+        
+        case 'slack':
+            return `
+                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <h4 class="text-sm font-medium mb-2 dark:text-white">Slack-Specific Metrics</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${renderMetricCard('Thread Participants', latestData.thread_participants || 0, 'group')}
+                        ${renderMetricCard('Reactions', latestData.reactions || 0, 'emoji_emotions')}
+                    </div>
+                </div>
+            `;
+        
+        default:
+            return '';
+    }
+}
+
+function renderMetricCard(label, value, icon) {
+    return `
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <div class="flex items-center mb-2">
+                <span class="material-icons text-gray-500 dark:text-gray-400 mr-2">${icon}</span>
+                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">${label}</span>
+            </div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                ${typeof value === 'number' ? value.toLocaleString() : value}
+            </div>
+        </div>
+    `;
+}
+
+function renderWatchTimeMetric(watchTime) {
+    if (typeof watchTime !== 'number') return '';
+    
+    const hours = Math.floor(watchTime);
+    const minutes = Math.round((watchTime - hours) * 60);
+    
+    return `
+        <div class="mt-4 bg-green-50 dark:bg-green-900 rounded-lg p-4">
+            <div class="flex items-center mb-2">
+                <span class="material-icons text-green-600 dark:text-green-400 mr-2">timer</span>
+                <span class="text-sm font-medium text-green-600 dark:text-green-400">Total Watch Time</span>
+            </div>
+            <div class="text-2xl font-bold text-green-700 dark:text-green-300">
+                ${hours}h ${minutes}m
+            </div>
+        </div>
+    `;
 }
 
 // Update statistics cards
@@ -1319,6 +1757,9 @@ function renderContentChart() {
                         case 'youtube': return '#FF0000'
                         case 'servicenow': return '#00c487'
                         case 'linkedin': return '#0A66C2'
+                        case 'reddit': return '#FF0000'
+                        case 'twitter': return '#1DA1F2'
+                        case 'slack': return '#4A154B'
                         default: return '#6B7280'
                     }
                 })
@@ -1598,3 +2039,261 @@ function setupCollapsibleSections() {
 
 // Initialize the app when the page loads
 window.addEventListener('DOMContentLoaded', initApp) 
+
+function renderEngagementChart(contentId, dataPoints) {
+    return `
+        <div class="mt-6">
+            <canvas id="engagement-chart-${contentId}" class="w-full"></canvas>
+        </div>
+    `;
+}
+
+function initializeCharts(contentId, dataPoints) {
+    // Sort data points by timestamp (oldest first for charts)
+    dataPoints.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    const labels = dataPoints.map(d => new Date(d.timestamp).toLocaleDateString());
+    const views = dataPoints.map(d => d.views);
+    const likes = dataPoints.map(d => d.likes);
+    const comments = dataPoints.map(d => d.comments);
+    const shares = dataPoints.map(d => d.shares);
+
+    const ctx = document.getElementById(`engagement-chart-${contentId}`).getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Views',
+                    data: views,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Likes',
+                    data: likes,
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Comments',
+                    data: comments,
+                    borderColor: 'rgb(245, 158, 11)',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Shares',
+                    data: shares,
+                    borderColor: 'rgb(139, 92, 246)',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Engagement Trends'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function updatePlatformChart() {
+    const platformStats = contentItems.reduce((acc, item) => {
+        acc[item.type] = (acc[item.type] || 0) + 1;
+        return acc;
+    }, {});
+
+    const platformColors = {
+        youtube: 'rgb(255, 0, 0)',
+        servicenow: 'rgb(81, 40, 136)',
+        linkedin: 'rgb(0, 119, 181)',
+        reddit: 'rgb(255, 69, 0)',
+        twitter: 'rgb(29, 161, 242)',
+        slack: 'rgb(74, 21, 75)'
+    };
+
+    const platformLabels = {
+        youtube: 'YouTube',
+        servicenow: 'ServiceNow',
+        linkedin: 'LinkedIn',
+        reddit: 'Reddit',
+        twitter: 'Twitter',
+        slack: 'Slack'
+    };
+
+    const ctx = document.getElementById('platform-chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(platformStats).map(type => platformLabels[type]),
+            datasets: [{
+                data: Object.values(platformStats),
+                backgroundColor: Object.keys(platformStats).map(type => platformColors[type]),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                title: {
+                    display: true,
+                    text: 'Content Distribution by Platform'
+                }
+            }
+        }
+    });
+}
+
+function updateTrendsChart() {
+    // Group engagement data by date
+    const dailyStats = engagementData.reduce((acc, data) => {
+        const date = new Date(data.timestamp).toLocaleDateString();
+        if (!acc[date]) {
+            acc[date] = {
+                views: 0,
+                likes: 0,
+                comments: 0,
+                shares: 0,
+                watchTime: 0
+            };
+        }
+        acc[date].views += data.views;
+        acc[date].likes += data.likes;
+        acc[date].comments += data.comments;
+        acc[date].shares += data.shares;
+        acc[date].watchTime += data.watch_time || 0;
+        return acc;
+    }, {});
+
+    const dates = Object.keys(dailyStats).sort((a, b) => new Date(a) - new Date(b));
+    const ctx = document.getElementById('trends-chart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
+                {
+                    label: 'Views',
+                    data: dates.map(date => dailyStats[date].views),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Watch Time (hours)',
+                    data: dates.map(date => dailyStats[date].watchTime),
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Daily Engagement Trends'
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Views'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Watch Time (hours)'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateStats() {
+    // Calculate total views
+    const totalViews = engagementData.reduce((sum, data) => sum + data.views, 0);
+    document.getElementById('total-views').textContent = totalViews.toLocaleString();
+
+    // Calculate total watch time
+    const totalWatchTime = engagementData.reduce((sum, data) => sum + (data.watch_time || 0), 0);
+    const hours = Math.floor(totalWatchTime);
+    const minutes = Math.round((totalWatchTime - hours) * 60);
+    document.getElementById('total-watch-time').textContent = `${hours}h ${minutes}m`;
+
+    // Calculate total engagement (likes + comments + shares)
+    const totalEngagement = engagementData.reduce((sum, data) => 
+        sum + data.likes + data.comments + data.shares, 0);
+    document.getElementById('total-engagement').textContent = totalEngagement.toLocaleString();
+
+    // Find top platform by views
+    const platformViews = engagementData.reduce((acc, data) => {
+        const content = contentItems.find(item => item.id === data.content_id);
+        if (content) {
+            acc[content.type] = (acc[content.type] || 0) + data.views;
+        }
+        return acc;
+    }, {});
+
+    const platformLabels = {
+        youtube: 'YouTube',
+        servicenow: 'ServiceNow',
+        linkedin: 'LinkedIn',
+        reddit: 'Reddit',
+        twitter: 'Twitter',
+        slack: 'Slack'
+    };
+
+    const topPlatform = Object.entries(platformViews)
+        .sort(([,a], [,b]) => b - a)[0];
+    
+    document.getElementById('top-platform').textContent = 
+        topPlatform ? platformLabels[topPlatform[0]] : '-';
+
+    // Update charts
+    updatePlatformChart();
+    updateTrendsChart();
+} 
