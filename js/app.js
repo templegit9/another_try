@@ -1726,6 +1726,7 @@ function updateStats() {
 function renderCharts() {
     const platformChartCanvas = document.getElementById('platform-chart');
     const contentChartCanvas = document.getElementById('content-chart');
+    const trendsChartCanvas = document.getElementById('trends-chart');
 
     if (platformChartCanvas) {
         try {
@@ -1740,6 +1741,14 @@ function renderCharts() {
             renderContentChart();
         } catch (error) {
             console.warn('Error rendering content chart:', error);
+        }
+    }
+
+    if (trendsChartCanvas) {
+        try {
+            renderTrendsChart();
+        } catch (error) {
+            console.warn('Error rendering trends chart:', error);
         }
     }
 }
@@ -2247,7 +2256,14 @@ function updatePlatformChart() {
     });
 }
 
-function updateTrendsChart() {
+// Render trends chart
+function renderTrendsChart() {
+    const canvas = document.getElementById('trends-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
     // Group engagement data by date
     const dailyStats = engagementData.reduce((acc, data) => {
         const date = new Date(data.timestamp).toLocaleDateString();
@@ -2260,18 +2276,22 @@ function updateTrendsChart() {
                 watchTime: 0
             };
         }
-        acc[date].views += data.views;
-        acc[date].likes += data.likes;
-        acc[date].comments += data.comments;
-        acc[date].shares += data.shares;
+        acc[date].views += data.views || 0;
+        acc[date].likes += data.likes || 0;
+        acc[date].comments += data.comments || 0;
+        acc[date].shares += data.shares || 0;
         acc[date].watchTime += data.watch_time || 0;
         return acc;
     }, {});
 
     const dates = Object.keys(dailyStats).sort((a, b) => new Date(a) - new Date(b));
-    const ctx = document.getElementById('trends-chart').getContext('2d');
     
-    new Chart(ctx, {
+    // Destroy existing chart if it exists
+    if (window.trendsChart) {
+        window.trendsChart.destroy();
+    }
+    
+    window.trendsChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: dates,
@@ -2303,6 +2323,9 @@ function updateTrendsChart() {
             plugins: {
                 legend: {
                     position: 'top',
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
                 },
                 title: {
                     display: true,
@@ -2317,6 +2340,9 @@ function updateTrendsChart() {
                     title: {
                         display: true,
                         text: 'Views'
+                    },
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
                     }
                 },
                 y1: {
@@ -2329,6 +2355,14 @@ function updateTrendsChart() {
                     },
                     grid: {
                         drawOnChartArea: false
+                    },
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
                     }
                 }
             }
