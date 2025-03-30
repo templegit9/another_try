@@ -937,25 +937,31 @@ async function fetchEngagementData(items) {
             
             if (data) {
                 // Add engagement data to Supabase
-                await addEngagementData({
-                    user_id: currentUser.id,
-                    content_id: item.id,
-                    views: data.views,
-                    likes: data.likes,
-                    comments: data.comments,
-                    watch_time: data.watchTime,
-                    timestamp: new Date().toISOString()
-                })
+                const { data: newEngagement, error } = await supabase
+                    .from('engagement_data')
+                    .insert([{
+                        user_id: currentUser.id,
+                        content_id: item.id,
+                        views: data.views,
+                        likes: data.likes,
+                        comments: data.comments,
+                        watch_time: data.watchTime,
+                        timestamp: new Date().toISOString()
+                    }])
+                    .select()
+                    .single()
                 
-                // Update local state
-                engagementData.push({
-                    ...data,
-                    content_id: item.id,
-                    timestamp: new Date().toISOString()
-                })
+                if (error) throw error
+                
+                // Update local state by removing any existing data for this content
+                engagementData = engagementData.filter(e => e.content_id !== item.id)
+                
+                // Add the new engagement data
+                engagementData.push(newEngagement)
             }
         } catch (error) {
             console.error(`Error fetching engagement data for ${item.platform}:`, error)
+            showErrorNotification(`Error fetching engagement data for ${item.name}`)
         }
     }
 }

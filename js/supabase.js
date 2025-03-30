@@ -125,6 +125,7 @@ export async function getEngagementData(userId) {
         .from('engagement_data')
         .select('*')
         .eq('user_id', userId)
+        .order('timestamp', { ascending: false })
     
     if (error) throw error
     return data
