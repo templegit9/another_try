@@ -1035,10 +1035,13 @@ async function fetchYouTubeEngagement(item) {
     const contentDetails = data.items[0].contentDetails
     
     // Calculate estimated watch time in hours based on views and duration
+    // Using industry average retention rate of ~50% for YouTube videos
     let watchTimeHours = 0
     if (contentDetails && contentDetails.duration && stats.viewCount) {
         const durationInSeconds = parseDuration(contentDetails.duration)
-        const totalWatchTimeSeconds = durationInSeconds * parseInt(stats.viewCount)
+        // Assume average viewer watches 50% of the video
+        const averageViewDurationSeconds = durationInSeconds * 0.5
+        const totalWatchTimeSeconds = averageViewDurationSeconds * parseInt(stats.viewCount)
         watchTimeHours = totalWatchTimeSeconds / 3600 // Convert to hours
     }
     
