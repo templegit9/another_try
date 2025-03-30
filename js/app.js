@@ -153,11 +153,22 @@ async function handleRegister(e) {
 // Login user and load their data
 async function loginUser(user) {
     try {
-        // Set current user with metadata
+        // Get user data from users table
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single()
+        
+        if (userError) {
+            console.error('Error fetching user data:', userError)
+            throw userError
+        }
+        
+        // Set current user with combined auth and db data
         currentUser = {
             ...user,
-            name: user.user_metadata?.name || user.email,
-            created_at: user.user_metadata?.created_at || user.created_at
+            ...userData
         }
         
         // Update UI
@@ -1284,18 +1295,19 @@ function showUserProfile() {
 // Save user profile
 async function saveUserProfile() {
     try {
-        const newName = document.getElementById('profile-display-name').value
+        const newName = document.getElementById('profile-display-name').value.trim()
         const currentPassword = document.getElementById('profile-current-password').value
         const newPassword = document.getElementById('profile-new-password').value
         
         // Update name if changed
         if (newName !== currentUser.name) {
-            const { data, error } = await supabase.auth.updateUser({
-                data: { name: newName }
-            })
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ name: newName })
+                .eq('id', currentUser.id)
             
-            if (error) throw error
-            currentUser = data.user
+            if (updateError) throw updateError
+            currentUser.name = newName
         }
         
         // Update password if provided
