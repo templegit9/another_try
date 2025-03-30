@@ -1633,37 +1633,64 @@ function renderWatchTimeMetric(watchTime) {
 
 // Update statistics cards
 function updateStats() {
-    // Update total content count
-    document.getElementById('total-content').textContent = contentItems.length.toLocaleString()
-    
-    // Calculate total engagements (sum of latest views)
-    const totalViews = Object.values(engagementData.reduce((acc, curr) => {
-        if (!acc[curr.content_id] || new Date(acc[curr.content_id].timestamp) < new Date(curr.timestamp)) {
-            acc[curr.content_id] = curr
-        }
-        return acc
-    }, {})).reduce((sum, data) => sum + data.views, 0)
-    
-    document.getElementById('total-engagements').textContent = totalViews.toLocaleString()
-    
+    // Calculate total content count
+    document.getElementById('total-content').textContent = contentItems.length.toLocaleString();
+
+    // Calculate total views
+    const totalViews = engagementData.reduce((sum, data) => sum + data.views, 0);
+    document.getElementById('total-engagements').textContent = totalViews.toLocaleString();
+    document.getElementById('total-views').textContent = totalViews.toLocaleString();
+
+    // Calculate total watch time
+    const totalWatchTime = engagementData.reduce((sum, data) => sum + (data.watch_time || 0), 0);
+    const hours = Math.floor(totalWatchTime);
+    const minutes = Math.round((totalWatchTime - hours) * 60);
+    document.getElementById('total-watch-time').textContent = `${hours}h ${minutes}m`;
+
+    // Calculate total engagement (likes + comments + shares)
+    const totalEngagement = engagementData.reduce((sum, data) => 
+        sum + data.likes + data.comments + data.shares, 0);
+    document.getElementById('total-engagement').textContent = totalEngagement.toLocaleString();
+
     // Find top platform by views
     const platformViews = contentItems.reduce((acc, item) => {
         const latestEngagement = engagementData
             .filter(e => e.content_id === item.id)
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
         
         if (latestEngagement) {
-            acc[item.platform] = (acc[item.platform] || 0) + latestEngagement.views
+            acc[item.type] = (acc[item.type] || 0) + latestEngagement.views;
         }
-        return acc
-    }, {})
-    
+        return acc;
+    }, {});
+
+    const platformLabels = {
+        youtube: 'YouTube',
+        servicenow: 'ServiceNow',
+        linkedin: 'LinkedIn',
+        reddit: 'Reddit',
+        twitter: 'Twitter',
+        slack: 'Slack'
+    };
+
     const topPlatform = Object.entries(platformViews)
-        .sort(([,a], [,b]) => b - a)[0]
+        .sort(([,a], [,b]) => b - a)[0];
     
-    document.getElementById('top-platform').textContent = topPlatform ? 
-        `${topPlatform[0].charAt(0).toUpperCase() + topPlatform[0].slice(1)}` : 
-        '-'
+    document.getElementById('top-platform').textContent = 
+        topPlatform ? platformLabels[topPlatform[0]] : '-';
+
+    // Update profile stats if profile is open
+    const profileContentCount = document.getElementById('profile-content-count');
+    const profileViewsCount = document.getElementById('profile-views-count');
+    if (profileContentCount && profileViewsCount) {
+        profileContentCount.textContent = contentItems.length.toLocaleString();
+        profileViewsCount.textContent = totalViews.toLocaleString();
+    }
+
+    // Update charts
+    updatePlatformChart();
+    updateTrendsChart();
+    renderCharts();
 }
 
 // Render charts
@@ -2251,49 +2278,4 @@ function updateTrendsChart() {
             }
         }
     });
-}
-
-function updateStats() {
-    // Calculate total views
-    const totalViews = engagementData.reduce((sum, data) => sum + data.views, 0);
-    document.getElementById('total-views').textContent = totalViews.toLocaleString();
-
-    // Calculate total watch time
-    const totalWatchTime = engagementData.reduce((sum, data) => sum + (data.watch_time || 0), 0);
-    const hours = Math.floor(totalWatchTime);
-    const minutes = Math.round((totalWatchTime - hours) * 60);
-    document.getElementById('total-watch-time').textContent = `${hours}h ${minutes}m`;
-
-    // Calculate total engagement (likes + comments + shares)
-    const totalEngagement = engagementData.reduce((sum, data) => 
-        sum + data.likes + data.comments + data.shares, 0);
-    document.getElementById('total-engagement').textContent = totalEngagement.toLocaleString();
-
-    // Find top platform by views
-    const platformViews = engagementData.reduce((acc, data) => {
-        const content = contentItems.find(item => item.id === data.content_id);
-        if (content) {
-            acc[content.type] = (acc[content.type] || 0) + data.views;
-        }
-        return acc;
-    }, {});
-
-    const platformLabels = {
-        youtube: 'YouTube',
-        servicenow: 'ServiceNow',
-        linkedin: 'LinkedIn',
-        reddit: 'Reddit',
-        twitter: 'Twitter',
-        slack: 'Slack'
-    };
-
-    const topPlatform = Object.entries(platformViews)
-        .sort(([,a], [,b]) => b - a)[0];
-    
-    document.getElementById('top-platform').textContent = 
-        topPlatform ? platformLabels[topPlatform[0]] : '-';
-
-    // Update charts
-    updatePlatformChart();
-    updateTrendsChart();
 } 
