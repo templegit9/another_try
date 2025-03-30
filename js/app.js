@@ -1633,24 +1633,32 @@ function renderWatchTimeMetric(watchTime) {
 
 // Update statistics cards
 function updateStats() {
+    // Helper function to safely update element text content
+    const safeSetTextContent = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    };
+
     // Calculate total content count
-    document.getElementById('total-content').textContent = contentItems.length.toLocaleString();
+    safeSetTextContent('total-content', contentItems.length.toLocaleString());
 
     // Calculate total views
     const totalViews = engagementData.reduce((sum, data) => sum + data.views, 0);
-    document.getElementById('total-engagements').textContent = totalViews.toLocaleString();
-    document.getElementById('total-views').textContent = totalViews.toLocaleString();
+    safeSetTextContent('total-engagements', totalViews.toLocaleString());
+    safeSetTextContent('total-views', totalViews.toLocaleString());
 
     // Calculate total watch time
     const totalWatchTime = engagementData.reduce((sum, data) => sum + (data.watch_time || 0), 0);
     const hours = Math.floor(totalWatchTime);
     const minutes = Math.round((totalWatchTime - hours) * 60);
-    document.getElementById('total-watch-time').textContent = `${hours}h ${minutes}m`;
+    safeSetTextContent('total-watch-time', `${hours}h ${minutes}m`);
 
     // Calculate total engagement (likes + comments + shares)
     const totalEngagement = engagementData.reduce((sum, data) => 
-        sum + data.likes + data.comments + data.shares, 0);
-    document.getElementById('total-engagement').textContent = totalEngagement.toLocaleString();
+        sum + (data.likes || 0) + (data.comments || 0) + (data.shares || 0), 0);
+    safeSetTextContent('total-engagement', totalEngagement.toLocaleString());
 
     // Find top platform by views
     const platformViews = contentItems.reduce((acc, item) => {
@@ -1676,8 +1684,7 @@ function updateStats() {
     const topPlatform = Object.entries(platformViews)
         .sort(([,a], [,b]) => b - a)[0];
     
-    document.getElementById('top-platform').textContent = 
-        topPlatform ? platformLabels[topPlatform[0]] : '-';
+    safeSetTextContent('top-platform', topPlatform ? platformLabels[topPlatform[0]] : '-');
 
     // Update profile stats if profile is open
     const profileContentCount = document.getElementById('profile-content-count');
@@ -1687,10 +1694,10 @@ function updateStats() {
         profileViewsCount.textContent = totalViews.toLocaleString();
     }
 
-    // Update charts
-    updatePlatformChart();
-    updateTrendsChart();
-    renderCharts();
+    // Update charts if they exist
+    if (typeof updatePlatformChart === 'function') updatePlatformChart();
+    if (typeof updateTrendsChart === 'function') updateTrendsChart();
+    if (typeof renderCharts === 'function') renderCharts();
 }
 
 // Render charts
