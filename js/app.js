@@ -245,8 +245,8 @@ async function loadUserData() {
 async function handleContentFormSubmit(e) {
     e.preventDefault();
     
-    const contentUrl = document.getElementById('content-url').value;
-    const platform = document.getElementById('content-source').value;
+    const contentUrl = document.getElementById('add-content-url').value;
+    const platform = document.getElementById('add-content-source').value;
     
     if (!contentUrl) {
         showErrorNotification('Please enter a URL');
@@ -255,13 +255,13 @@ async function handleContentFormSubmit(e) {
 
     const contentData = {
         user_id: currentUser.id,
-        name: document.getElementById('content-name').value,
-        description: document.getElementById('content-description').value,
+        name: document.getElementById('add-content-name').value,
+        description: document.getElementById('add-content-description').value,
         platform: platform,
         url: contentUrl,
         content_id: extractContentId(contentUrl, platform),
-        published_date: document.getElementById('content-published').value,
-        duration: document.getElementById('content-duration').value,
+        published_date: document.getElementById('add-content-published').value,
+        duration: document.getElementById('add-content-duration').value,
         created_at: new Date().toISOString()
     };
     
@@ -296,8 +296,8 @@ async function handleContentFormSubmit(e) {
         
         // Reset form
         e.target.reset();
-        document.getElementById('content-published').valueAsDate = new Date();
-        document.getElementById('duplicate-warning').classList.add('hidden');
+        document.getElementById('add-content-published').valueAsDate = new Date();
+        document.getElementById('add-duplicate-warning').classList.add('hidden');
         
         // Collapse the add content section
         document.getElementById('add-content-body').classList.add('hidden');
@@ -642,18 +642,18 @@ function setupEventListeners() {
     });
     
     // Content form
-    const contentForm = document.getElementById('content-form');
+    const contentForm = document.getElementById('add-content-form');
     if (contentForm) {
         contentForm.addEventListener('submit', handleContentFormSubmit);
         
         // URL field validation
-        const contentUrlField = document.getElementById('content-url');
+        const contentUrlField = document.getElementById('add-content-url');
         if (contentUrlField) {
             contentUrlField.addEventListener('blur', checkForDuplicateUrl);
         }
         
         // Fetch content info button
-        const fetchInfoButton = document.getElementById('fetch-content-info');
+        const fetchInfoButton = document.getElementById('add-fetch-content-info');
         if (fetchInfoButton) {
             fetchInfoButton.addEventListener('click', fetchContentInfo);
         }
@@ -707,22 +707,22 @@ function setupEventListeners() {
     }
     
     // Platform selection change
-    document.getElementById('content-source').addEventListener('change', () => {
-        updateUrlPlaceholder()
+    document.getElementById('add-content-source').addEventListener('change', () => {
+        updateUrlPlaceholder();
         
         // Show/hide duration field based on platform
-        const platform = document.getElementById('content-source').value
-        const durationContainer = document.getElementById('duration-container')
+        const platform = document.getElementById('add-content-source').value;
+        const durationContainer = document.getElementById('add-duration-container');
         if (platform === 'youtube') {
-            durationContainer.classList.remove('hidden')
+            durationContainer.classList.remove('hidden');
         } else {
-            durationContainer.classList.add('hidden')
+            durationContainer.classList.add('hidden');
         }
-    })
+    });
     
     // Initialize URL placeholder
-    updateUrlPlaceholder()
-
+    updateUrlPlaceholder();
+    
     // Forgot Password Modal Elements
     const forgotPasswordModal = document.getElementById('forgot-password-modal');
     const forgotPasswordLink = document.getElementById('forgot-password-link');
@@ -774,54 +774,54 @@ function setupEventListeners() {
 
 // Update URL placeholder based on selected platform
 function updateUrlPlaceholder() {
-    const platform = document.getElementById('content-source').value
-    const urlField = document.getElementById('content-url')
+    const platform = document.getElementById('add-content-source').value;
+    const urlField = document.getElementById('add-content-url');
     
     switch (platform) {
         case 'youtube':
-            urlField.placeholder = 'https://youtube.com/watch?v=XXXX'
-            break
+            urlField.placeholder = 'https://youtube.com/watch?v=XXXX';
+            break;
         case 'servicenow':
-            urlField.placeholder = 'https://community.servicenow.com/blog/XXXX'
-            break
+            urlField.placeholder = 'https://community.servicenow.com/blog/XXXX';
+            break;
         case 'linkedin':
-            urlField.placeholder = 'https://www.linkedin.com/posts/XXXX'
-            break
+            urlField.placeholder = 'https://www.linkedin.com/posts/XXXX';
+            break;
         case 'reddit':
-            urlField.placeholder = 'https://www.reddit.com/XXXX'
-            break
+            urlField.placeholder = 'https://www.reddit.com/XXXX';
+            break;
         case 'twitter':
-            urlField.placeholder = 'https://twitter.com/XXXX'
-            break
+            urlField.placeholder = 'https://twitter.com/XXXX';
+            break;
         case 'slack':
-            urlField.placeholder = 'https://slack.com/XXXX'
-            break
+            urlField.placeholder = 'https://slack.com/XXXX';
+            break;
         default:
-            urlField.placeholder = 'https://example.com'
+            urlField.placeholder = 'https://example.com';
     }
 }
 
 // Check for duplicate URL
 function checkForDuplicateUrl() {
-    const url = document.getElementById('content-url').value
-    if (!url) return
+    const url = document.getElementById('add-content-url').value;
+    if (!url) return;
     
-    const normalizedUrl = normalizeUrl(url)
-    const existingContentId = urlToContentMap[normalizedUrl]
+    const normalizedUrl = normalizeUrl(url);
+    const existingContentId = urlToContentMap[normalizedUrl];
     
     if (existingContentId) {
         // Show warning
-        const duplicateWarning = document.getElementById('duplicate-warning')
-        duplicateWarning.classList.remove('hidden')
+        const duplicateWarning = document.getElementById('add-duplicate-warning');
+        duplicateWarning.classList.remove('hidden');
         
         // Find the existing content item
-        const existingContent = contentItems.find(item => item.id === existingContentId)
+        const existingContent = contentItems.find(item => item.id === existingContentId);
         if (existingContent) {
-            duplicateWarning.textContent = `Warning: This URL has already been added as "${existingContent.name}".`
+            duplicateWarning.textContent = `Warning: This URL has already been added as "${existingContent.name}".`;
         }
     } else {
         // Hide warning
-        document.getElementById('duplicate-warning').classList.add('hidden')
+        document.getElementById('add-duplicate-warning').classList.add('hidden');
     }
 }
 
@@ -847,8 +847,8 @@ function normalizeUrl(url) {
 
 // Fetch content information based on URL
 async function fetchContentInfo() {
-    const contentUrl = document.getElementById('content-url').value
-    const platform = document.getElementById('content-source').value
+    const contentUrl = document.getElementById('add-content-url').value
+    const platform = document.getElementById('add-content-source').value
     
     if (!contentUrl) {
         showErrorNotification('Please enter a URL first')
@@ -856,7 +856,7 @@ async function fetchContentInfo() {
     }
     
     // Show loading state
-    const fetchButton = document.getElementById('fetch-content-info')
+    const fetchButton = document.getElementById('add-fetch-content-info')
     fetchButton.disabled = true
     fetchButton.innerHTML = '<span class="material-icons animate-spin">refresh</span> Loading...'
     
@@ -901,17 +901,17 @@ async function fetchContentInfo() {
         
         // Update form fields with content information
         if (contentInfo) {
-            document.getElementById('content-name').value = contentInfo.title || ''
+            document.getElementById('add-content-name').value = contentInfo.title || ''
             
             if (contentInfo.publishedDate) {
-                document.getElementById('content-published').valueAsDate = new Date(contentInfo.publishedDate)
+                document.getElementById('add-content-published').valueAsDate = new Date(contentInfo.publishedDate)
             }
             
             // Set duration if available (for YouTube)
             if (contentInfo.duration && platform === 'youtube') {
-                document.getElementById('content-duration').value = contentInfo.duration
+                document.getElementById('add-content-duration').value = contentInfo.duration
             } else {
-                document.getElementById('content-duration').value = ''
+                document.getElementById('add-content-duration').value = ''
             }
         }
         

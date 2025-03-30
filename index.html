@@ -267,73 +267,6 @@
 
         <!-- Main content area -->
         <div class="container mx-auto px-4 py-8">
-            <!-- Content Form -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-                <h2 class="text-2xl font-bold mb-4 dark:text-white">Add New Content</h2>
-                <form id="content-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="md:col-span-2">
-                        <label for="content-url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL <span class="text-red-500 dark:text-red-400">*</span></label>
-                        <input type="url" id="content-url" name="content-url" required
-                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        <p id="duplicate-warning" class="text-red-500 dark:text-red-400 text-xs mt-1 hidden">Warning: URL already exists</p>
-                    </div>
-                    <div>
-                        <label for="content-source" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Platform <span class="text-red-500 dark:text-red-400">*</span></label>
-                        <select id="content-source" name="content-source" required
-                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                            <option value="youtube">YouTube</option>
-                            <option value="servicenow">ServiceNow Community</option>
-                            <option value="linkedin">LinkedIn</option>
-                            <option value="reddit">Reddit</option>
-                            <option value="twitter">Twitter</option>
-                            <option value="slack">Slack</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="fetch-content-info" class="block text-sm font-medium text-transparent mb-1">Get Info</label>
-                        <button type="button" id="fetch-content-info" 
-                            class="btn bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-blue-200 w-full">
-                            <span class="material-icons mr-1">cloud_download</span> Get Info
-                        </button>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="content-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected, can edit)</span></label>
-                        <input type="text" id="content-name" name="content-name" required
-                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
-                            placeholder="Will be extracted from URL">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="content-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description <span class="text-gray-400 dark:text-gray-500 text-xs">(optional)</span></label>
-                        <input type="text" id="content-description" name="content-description"
-                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
-                            placeholder="Your notes about this content">
-                    </div>
-                    <div id="duration-container" class="hidden">
-                        <label for="content-duration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected for videos)</span></label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span class="material-icons text-gray-400 dark:text-gray-500 text-sm">timer</span>
-                            </span>
-                            <input type="text" id="content-duration" name="content-duration"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full pl-10 sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
-                                placeholder="0:00" readonly>
-                        </div>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="content-published" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Published Date <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected when possible)</span></label>
-                        <input type="date" id="content-published" name="content-published" required
-                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                    </div>
-                    <div class="md:col-span-4">
-                        <div class="flex justify-end">
-                            <button type="submit" class="btn btn-primary">
-                                <span class="material-icons mr-1">add</span> Add Content
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
             <!-- Stats cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
@@ -421,16 +354,16 @@
                         <span class="material-icons text-gray-500 dark:text-gray-400 transform transition-transform duration-200">expand_more</span>
                     </div>
                     <div id="add-content-body" class="transition-all duration-300 overflow-hidden">
-                        <form id="content-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <form id="add-content-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="md:col-span-2">
-                                <label for="content-url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL <span class="text-red-500 dark:text-red-400">*</span></label>
-                                <input type="url" id="content-url" name="content-url" required
+                                <label for="add-content-url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL <span class="text-red-500 dark:text-red-400">*</span></label>
+                                <input type="url" id="add-content-url" name="content-url" required
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                                <p id="duplicate-warning" class="text-red-500 dark:text-red-400 text-xs mt-1 hidden">Warning: URL already exists</p>
+                                <p id="add-duplicate-warning" class="text-red-500 dark:text-red-400 text-xs mt-1 hidden">Warning: URL already exists</p>
                             </div>
                             <div>
-                                <label for="content-source" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Platform <span class="text-red-500 dark:text-red-400">*</span></label>
-                                <select id="content-source" name="content-source" required
+                                <label for="add-content-source" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Platform <span class="text-red-500 dark:text-red-400">*</span></label>
+                                <select id="add-content-source" name="content-source" required
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
                                     <option value="youtube">YouTube</option>
                                     <option value="servicenow">ServiceNow Community</option>
@@ -441,38 +374,38 @@
                                 </select>
                             </div>
                             <div>
-                                <label for="fetch-content-info" class="block text-sm font-medium text-transparent mb-1">Get Info</label>
-                                <button type="button" id="fetch-content-info" 
+                                <label for="add-fetch-content-info" class="block text-sm font-medium text-transparent mb-1">Get Info</label>
+                                <button type="button" id="add-fetch-content-info" 
                                     class="btn bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-blue-200 w-full">
                                     <span class="material-icons mr-1">cloud_download</span> Get Info
                                 </button>
                             </div>
                             <div class="md:col-span-2">
-                                <label for="content-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected, can edit)</span></label>
-                                <input type="text" id="content-name" name="content-name" required
+                                <label for="add-content-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected, can edit)</span></label>
+                                <input type="text" id="add-content-name" name="content-name" required
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
                                     placeholder="Will be extracted from URL">
                             </div>
                             <div class="md:col-span-2">
-                                <label for="content-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description <span class="text-gray-400 dark:text-gray-500 text-xs">(optional)</span></label>
-                                <input type="text" id="content-description" name="content-description"
+                                <label for="add-content-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description <span class="text-gray-400 dark:text-gray-500 text-xs">(optional)</span></label>
+                                <input type="text" id="add-content-description" name="content-description"
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
                                     placeholder="Your notes about this content">
                             </div>
-                            <div id="duration-container" class="hidden">
-                                <label for="content-duration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected for videos)</span></label>
+                            <div id="add-duration-container" class="hidden">
+                                <label for="add-content-duration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected for videos)</span></label>
                                 <div class="relative">
                                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <span class="material-icons text-gray-400 dark:text-gray-500 text-sm">timer</span>
                                     </span>
-                                    <input type="text" id="content-duration" name="content-duration"
+                                    <input type="text" id="add-content-duration" name="content-duration"
                                         class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full pl-10 sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
                                         placeholder="0:00" readonly>
                                 </div>
                             </div>
                             <div class="md:col-span-2">
-                                <label for="content-published" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Published Date <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected when possible)</span></label>
-                                <input type="date" id="content-published" name="content-published" required
+                                <label for="add-content-published" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Published Date <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected when possible)</span></label>
+                                <input type="date" id="add-content-published" name="content-published" required
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
                             </div>
                             <div class="md:col-span-4">
