@@ -1017,7 +1017,7 @@ async function fetchYouTubeEngagement(item) {
     }
     
     const apiKey = apiConfig.youtube.apiKey
-    const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${item.content_id}&key=${apiKey}`
+    const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${item.content_id}&key=${apiKey}`
     
     const response = await fetch(statsUrl)
     
@@ -1032,13 +1032,31 @@ async function fetchYouTubeEngagement(item) {
     }
     
     const stats = data.items[0].statistics
+    const contentDetails = data.items[0].contentDetails
+    
+    // Calculate estimated watch time in hours based on views and duration
+    let watchTimeHours = 0
+    if (contentDetails && contentDetails.duration && stats.viewCount) {
+        const durationInSeconds = parseDuration(contentDetails.duration)
+        const totalWatchTimeSeconds = durationInSeconds * parseInt(stats.viewCount)
+        watchTimeHours = totalWatchTimeSeconds / 3600 // Convert to hours
+    }
     
     return {
         views: parseInt(stats.viewCount) || 0,
         likes: parseInt(stats.likeCount) || 0,
         comments: parseInt(stats.commentCount) || 0,
-        watchTime: 0 // Watch time requires YouTube Analytics API
+        watchTime: watchTimeHours
     }
+}
+
+// Helper function to parse YouTube duration format (PT1H2M10S) into seconds
+function parseDuration(duration) {
+    const matches = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+    const hours = parseInt(matches[1] || 0)
+    const minutes = parseInt(matches[2] || 0)
+    const seconds = parseInt(matches[3] || 0)
+    return hours * 3600 + minutes * 60 + seconds
 }
 
 // Fetch ServiceNow engagement data
@@ -1047,13 +1065,18 @@ async function fetchServiceNowEngagement(item) {
         throw new Error('ServiceNow API not configured')
     }
     
-    // For demo purposes, return simulated data
+    // For demo purposes, return simulated data with estimated watch time
     // In production, this would make an actual API call
+    const views = Math.floor(Math.random() * 1000)
+    // Estimate 5-15 minutes per view for articles
+    const avgReadTimeMinutes = Math.random() * 10 + 5
+    const watchTimeHours = (views * avgReadTimeMinutes) / 60
+    
     return {
-        views: Math.floor(Math.random() * 1000),
+        views: views,
         likes: Math.floor(Math.random() * 50),
         comments: Math.floor(Math.random() * 20),
-        watchTime: 0
+        watchTime: watchTimeHours
     }
 }
 
@@ -1063,13 +1086,18 @@ async function fetchLinkedInEngagement(item) {
         throw new Error('LinkedIn API not configured')
     }
     
-    // For demo purposes, return simulated data
+    // For demo purposes, return simulated data with estimated watch time
     // In production, this would make an actual API call
+    const views = Math.floor(Math.random() * 5000)
+    // Estimate 2-5 minutes per view for posts
+    const avgReadTimeMinutes = Math.random() * 3 + 2
+    const watchTimeHours = (views * avgReadTimeMinutes) / 60
+    
     return {
-        views: Math.floor(Math.random() * 5000),
+        views: views,
         likes: Math.floor(Math.random() * 200),
         comments: Math.floor(Math.random() * 50),
-        watchTime: 0
+        watchTime: watchTimeHours
     }
 }
 
