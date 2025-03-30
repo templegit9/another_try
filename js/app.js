@@ -1645,7 +1645,7 @@ function updateStats() {
     safeSetTextContent('total-content', contentItems.length.toLocaleString());
 
     // Calculate total views
-    const totalViews = engagementData.reduce((sum, data) => sum + data.views, 0);
+    const totalViews = engagementData.reduce((sum, data) => sum + (data.views || 0), 0);
     safeSetTextContent('total-engagements', totalViews.toLocaleString());
     safeSetTextContent('total-views', totalViews.toLocaleString());
 
@@ -1694,37 +1694,59 @@ function updateStats() {
         profileViewsCount.textContent = totalViews.toLocaleString();
     }
 
-    // Update charts if they exist
-    if (typeof updatePlatformChart === 'function') updatePlatformChart();
-    if (typeof updateTrendsChart === 'function') updateTrendsChart();
-    if (typeof renderCharts === 'function') renderCharts();
+    // Safely update charts
+    try {
+        renderCharts();
+    } catch (error) {
+        console.warn('Error rendering charts:', error);
+    }
 }
 
 // Render charts
 function renderCharts() {
-    renderPlatformChart()
-    renderContentChart()
+    const platformChartCanvas = document.getElementById('platform-chart');
+    const contentChartCanvas = document.getElementById('content-chart');
+
+    if (platformChartCanvas) {
+        try {
+            renderPlatformChart();
+        } catch (error) {
+            console.warn('Error rendering platform chart:', error);
+        }
+    }
+
+    if (contentChartCanvas) {
+        try {
+            renderContentChart();
+        } catch (error) {
+            console.warn('Error rendering content chart:', error);
+        }
+    }
 }
 
 // Render platform engagement chart
 function renderPlatformChart() {
-    const ctx = document.getElementById('platform-chart').getContext('2d')
+    const canvas = document.getElementById('platform-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     
     // Calculate total views per platform
     const platformData = contentItems.reduce((acc, item) => {
         const latestEngagement = engagementData
             .filter(e => e.content_id === item.id)
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
         
         if (latestEngagement) {
-            acc[item.platform] = (acc[item.platform] || 0) + latestEngagement.views
+            acc[item.platform] = (acc[item.platform] || 0) + latestEngagement.views;
         }
-        return acc
-    }, {})
+        return acc;
+    }, {});
     
     // Create or update chart
     if (window.platformChart) {
-        window.platformChart.destroy()
+        window.platformChart.destroy();
     }
     
     window.platformChart = new Chart(ctx, {
@@ -1736,7 +1758,10 @@ function renderPlatformChart() {
                 backgroundColor: [
                     '#FF0000', // YouTube red
                     '#00c487', // ServiceNow green
-                    '#0A66C2'  // LinkedIn blue
+                    '#0A66C2', // LinkedIn blue
+                    '#FF4500', // Reddit orange
+                    '#1DA1F2', // Twitter blue
+                    '#4A154B'  // Slack purple
                 ]
             }]
         },
@@ -1751,32 +1776,36 @@ function renderPlatformChart() {
                 }
             }
         }
-    })
+    });
 }
 
 // Render top content chart
 function renderContentChart() {
-    const ctx = document.getElementById('content-chart').getContext('2d')
+    const canvas = document.getElementById('content-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     
     // Get top 5 content items by views
     const topContent = contentItems
         .map(item => {
             const latestEngagement = engagementData
                 .filter(e => e.content_id === item.id)
-                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
             
             return {
                 name: item.name,
                 views: latestEngagement ? latestEngagement.views : 0,
                 platform: item.platform
-            }
+            };
         })
         .sort((a, b) => b.views - a.views)
-        .slice(0, 5)
+        .slice(0, 5);
     
     // Create or update chart
     if (window.contentChart) {
-        window.contentChart.destroy()
+        window.contentChart.destroy();
     }
     
     window.contentChart = new Chart(ctx, {
@@ -1788,13 +1817,13 @@ function renderContentChart() {
                 data: topContent.map(c => c.views),
                 backgroundColor: topContent.map(c => {
                     switch (c.platform) {
-                        case 'youtube': return '#FF0000'
-                        case 'servicenow': return '#00c487'
-                        case 'linkedin': return '#0A66C2'
-                        case 'reddit': return '#FF0000'
-                        case 'twitter': return '#1DA1F2'
-                        case 'slack': return '#4A154B'
-                        default: return '#6B7280'
+                        case 'youtube': return '#FF0000';
+                        case 'servicenow': return '#00c487';
+                        case 'linkedin': return '#0A66C2';
+                        case 'reddit': return '#FF4500';
+                        case 'twitter': return '#1DA1F2';
+                        case 'slack': return '#4A154B';
+                        default: return '#6B7280';
                     }
                 })
             }]
@@ -1820,7 +1849,7 @@ function renderContentChart() {
                 }
             }
         }
-    })
+    });
 }
 
 // Update charts for dark mode
