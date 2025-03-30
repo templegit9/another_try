@@ -512,6 +512,54 @@ function setupEventListeners() {
     
     // Initialize URL placeholder
     updateUrlPlaceholder()
+
+    // Forgot Password Modal Elements
+    const forgotPasswordModal = document.getElementById('forgot-password-modal');
+    const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const closeForgotPasswordModal = document.getElementById('close-forgot-password-modal');
+    const forgotPasswordForm = document.getElementById('forgot-password-form');
+    const resetMessage = document.getElementById('reset-message');
+
+    // Forgot Password Event Listeners
+    forgotPasswordLink.addEventListener('click', () => {
+        forgotPasswordModal.classList.remove('hidden');
+    });
+
+    closeForgotPasswordModal.addEventListener('click', () => {
+        forgotPasswordModal.classList.add('hidden');
+        resetMessage.classList.add('hidden');
+        forgotPasswordForm.reset();
+    });
+
+    forgotPasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('reset-email').value.trim();
+        
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password.html`
+            });
+
+            if (error) throw error;
+
+            // Show success message
+            resetMessage.textContent = 'Password reset link sent! Please check your email.';
+            resetMessage.classList.remove('hidden', 'text-red-500', 'text-green-500');
+            resetMessage.classList.add('text-green-500');
+            
+            // Reset form and close modal after 3 seconds
+            setTimeout(() => {
+                forgotPasswordForm.reset();
+                forgotPasswordModal.classList.add('hidden');
+                resetMessage.classList.add('hidden');
+            }, 3000);
+        } catch (error) {
+            console.error('Error sending reset password email:', error);
+            resetMessage.textContent = error.message || 'Failed to send reset link. Please try again.';
+            resetMessage.classList.remove('hidden', 'text-red-500', 'text-green-500');
+            resetMessage.classList.add('text-red-500');
+        }
+    });
 }
 
 // Update URL placeholder based on selected platform
