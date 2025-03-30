@@ -1949,24 +1949,99 @@ async function testServiceNowApi() {
 
 async function testLinkedInApi() {
     try {
-        if (!apiConfig.linkedin.clientId || !apiConfig.linkedin.clientSecret) {
-            throw new Error('API not configured')
+        // Check if LinkedIn API credentials are configured
+        if (!apiConfig.linkedin?.clientId || !apiConfig.linkedin?.clientSecret) {
+            throw new Error('Please fill in both Client ID and Client Secret');
         }
-        
-        // For demo purposes, just check if config exists
-        document.getElementById('linkedin-api-status').textContent = 'Connected'
-        document.getElementById('linkedin-api-status').className = 
-            'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2'
-        
-        showSuccessNotification('LinkedIn API connection successful')
+
+        // Validate format of Client ID and Client Secret
+        if (!/^[a-z0-9]{12}$/i.test(apiConfig.linkedin.clientId)) {
+            throw new Error('Invalid Client ID format. Should be 12 characters long.');
+        }
+
+        if (!/^[a-zA-Z0-9]{16}$/i.test(apiConfig.linkedin.clientSecret)) {
+            throw new Error('Invalid Client Secret format. Should be 16 characters long.');
+        }
+
+        try {
+            // Test LinkedIn API connection using OAuth 2.0
+            const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    'grant_type': 'client_credentials',
+                    'client_id': apiConfig.linkedin.clientId,
+                    'client_secret': apiConfig.linkedin.clientSecret,
+                    'scope': 'r_liteprofile r_emailaddress w_member_social'
+                })
+            });
+
+            if (!tokenResponse.ok) {
+                const errorData = await tokenResponse.json();
+                throw new Error(errorData.error_description || 'Failed to authenticate with LinkedIn');
+            }
+
+            // Update UI to show success
+            const statusElement = document.getElementById('linkedin-api-status');
+            statusElement.textContent = 'Connected';
+            statusElement.className = 'badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 ml-2';
+            
+            showSuccessNotification('LinkedIn API connection successful');
+        } catch (apiError) {
+            throw new Error(`API Connection failed: ${apiError.message}`);
+        }
     } catch (error) {
-        document.getElementById('linkedin-api-status').textContent = 'Not Connected'
-        document.getElementById('linkedin-api-status').className = 
-            'badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2'
+        // Update UI to show error
+        const statusElement = document.getElementById('linkedin-api-status');
+        statusElement.textContent = 'Not Connected';
+        statusElement.className = 'badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2';
         
-        showErrorNotification(`LinkedIn API test failed: ${error.message}`)
+        showErrorNotification(`LinkedIn API test failed: ${error.message}`);
+        console.error('LinkedIn API test error:', error);
     }
 }
+
+// Update the LinkedIn API configuration save handler
+function saveLinkedInConfig() {
+    const clientId = document.getElementById('linkedin-client-id').value.trim();
+    const clientSecret = document.getElementById('linkedin-client-secret').value.trim();
+    
+    // Basic validation
+    if (!clientId || !clientSecret) {
+        showErrorNotification('Please fill in both LinkedIn Client ID and Client Secret');
+        return false;
+    }
+    
+    // Update the global apiConfig
+    apiConfig.linkedin = {
+        clientId: clientId,
+        clientSecret: clientSecret
+    };
+    
+    return true;
+}
+
+// Add event listener for LinkedIn config changes
+document.addEventListener('DOMContentLoaded', () => {
+    const linkedinClientId = document.getElementById('linkedin-client-id');
+    const linkedinClientSecret = document.getElementById('linkedin-client-secret');
+    
+    if (linkedinClientId && linkedinClientSecret) {
+        linkedinClientId.addEventListener('change', () => {
+            const statusElement = document.getElementById('linkedin-api-status');
+            statusElement.textContent = 'Not Tested';
+            statusElement.className = 'badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 ml-2';
+        });
+        
+        linkedinClientSecret.addEventListener('change', () => {
+            const statusElement = document.getElementById('linkedin-api-status');
+            statusElement.textContent = 'Not Tested';
+            statusElement.className = 'badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 ml-2';
+        });
+    }
+});
 
 // Show user profile
 function showUserProfile() {
