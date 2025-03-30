@@ -1511,51 +1511,71 @@ function renderContentItems() {
 
 // Render engagement data in the table
 function renderEngagementData() {
-    const engagementContainer = document.getElementById('engagement-data');
-    if (!engagementContainer) return;
-
-    // Group engagement data by content ID
-    const groupedData = {};
-    engagementData.forEach(data => {
-        if (!groupedData[data.content_id]) {
-            groupedData[data.content_id] = [];
-        }
-        groupedData[data.content_id].push(data);
-    });
-
-    const html = Object.entries(groupedData).map(([contentId, dataPoints]) => {
-        // Find the corresponding content item
-        const contentItem = contentItems.find(item => item.id === contentId);
-        if (!contentItem) return '';
-
-        // Sort data points by timestamp (newest first)
-        dataPoints.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        const latestData = dataPoints[0];
-
-        return `
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4">
-                <h3 class="text-lg font-semibold mb-4 dark:text-white">${contentItem.title}</h3>
-                
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    ${renderMetricCard('Views', latestData.views, 'visibility')}
-                    ${renderMetricCard('Likes', latestData.likes, 'thumb_up')}
-                    ${renderMetricCard('Comments', latestData.comments, 'comment')}
-                    ${renderMetricCard('Shares', latestData.shares, 'share')}
-                </div>
-                
-                ${renderWatchTimeMetric(latestData.watch_time)}
-                ${renderEngagementChart(contentId, dataPoints)}
-                ${renderPlatformSpecificMetrics(contentItem, latestData)}
-            </div>
-        `;
-    }).join('');
-
-    engagementContainer.innerHTML = html;
+    const engagementList = document.getElementById('engagement-list');
+    if (!engagementList) return;
     
-    // Initialize charts after rendering
-    Object.keys(groupedData).forEach(contentId => {
-        initializeCharts(contentId, groupedData[contentId]);
+    engagementList.innerHTML = '';
+    
+    // Group engagement data by content ID and get latest entry for each
+    const latestEngagementData = contentItems.map(item => {
+        const itemEngagements = engagementData
+            .filter(data => data.content_id === item.id)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        return {
+            content: item,
+            engagement: itemEngagements[0] || null
+        };
     });
+
+    // Sort by latest engagement timestamp
+    latestEngagementData
+        .sort((a, b) => {
+            if (!a.engagement) return 1;
+            if (!b.engagement) return -1;
+            return new Date(b.engagement.timestamp) - new Date(a.engagement.timestamp);
+        })
+        .forEach(({ content, engagement }) => {
+            const row = document.createElement('tr');
+            
+            const watchTimeStr = engagement?.watch_time ? formatWatchTime(engagement.watch_time) : '-';
+            const lastUpdated = engagement ? new Date(engagement.timestamp).toLocaleString() : '-';
+            
+            row.innerHTML = `
+                <td class="px-6 py-4">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">${content.name}</div>
+                    ${content.description ? `<div class="text-sm text-gray-500 dark:text-gray-400">${content.description}</div>` : ''}
+                </td>
+                <td class="px-6 py-4">
+                    <span class="badge ${content.platform}">${content.platform}</span>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    ${engagement ? engagement.views.toLocaleString() : '-'}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    ${watchTimeStr}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    ${engagement ? engagement.likes.toLocaleString() : '-'}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    ${engagement ? engagement.comments.toLocaleString() : '-'}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    ${lastUpdated}
+                </td>
+            `;
+            
+            engagementList.appendChild(row);
+        });
+}
+
+// Helper function to format watch time
+function formatWatchTime(hours) {
+    if (!hours) return '-';
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+    return `${wholeHours}h ${minutes}m`;
 }
 
 function renderPlatformSpecificMetrics(contentItem, latestData) {
