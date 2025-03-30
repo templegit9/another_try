@@ -190,22 +190,38 @@ async function loginUser(user) {
 // Load user data from Supabase
 async function loadUserData() {
     try {
+        // First check if we have a valid user
+        if (!currentUser || !currentUser.id) {
+            throw new Error('No valid user session')
+        }
+
         // Load API config
         const apiConfigs = await getApiConfig(currentUser.id)
-        apiConfigs.forEach(config => {
-            apiConfig[config.platform] = config.config
-        })
-        updateApiConfigUI()
+        if (apiConfigs) {
+            apiConfigs.forEach(config => {
+                apiConfig[config.platform] = config.config
+            })
+            updateApiConfigUI()
+        }
         
         // Load content items
-        contentItems = await getContentItems(currentUser.id)
-        rebuildUrlContentMap()
+        const items = await getContentItems(currentUser.id)
+        if (items) {
+            contentItems = items
+            rebuildUrlContentMap()
+        }
         
         // Load engagement data
-        engagementData = await getEngagementData(currentUser.id)
+        const data = await getEngagementData(currentUser.id)
+        if (data) {
+            engagementData = data
+        }
         
         // Set default date to today for content form
-        document.getElementById('content-published').valueAsDate = new Date()
+        const publishedDateInput = document.getElementById('content-published')
+        if (publishedDateInput) {
+            publishedDateInput.valueAsDate = new Date()
+        }
         
         // Render data
         renderContentItems()
@@ -214,7 +230,11 @@ async function loadUserData() {
         renderCharts()
     } catch (error) {
         console.error('Error loading user data:', error)
-        showErrorNotification('Error loading user data')
+        showErrorNotification('Error loading user data: ' + error.message)
+        
+        // If we can't load the user data, sign them out
+        await signOut()
+        showAuthScreen()
     }
 }
 
@@ -919,20 +939,32 @@ async function refreshEngagementData(e) {
 async function fetchEngagementData(items) {
     for (const item of items) {
         try {
-            let data = null
+            let data = null;
             
             switch (item.platform) {
                 case 'youtube':
-                    data = await fetchYouTubeEngagement(item)
-                    break
+                    if (!apiConfig.youtube.apiKey) {
+                        console.warn('YouTube API key not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchYouTubeEngagement(item);
+                    break;
                 
                 case 'servicenow':
-                    data = await fetchServiceNowEngagement(item)
-                    break
+                    if (!apiConfig.servicenow.instance || !apiConfig.servicenow.username) {
+                        console.warn('ServiceNow API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchServiceNowEngagement(item);
+                    break;
                 
                 case 'linkedin':
-                    data = await fetchLinkedInEngagement(item)
-                    break
+                    if (!apiConfig.linkedin.clientId || !apiConfig.linkedin.clientSecret) {
+                        console.warn('LinkedIn API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchLinkedInEngagement(item);
+                    break;
             }
             
             if (data) {
@@ -942,26 +974,29 @@ async function fetchEngagementData(items) {
                     .insert([{
                         user_id: currentUser.id,
                         content_id: item.id,
-                        views: data.views,
-                        likes: data.likes,
-                        comments: data.comments,
-                        watch_time: data.watchTime,
+                        views: data.views || 0,
+                        likes: data.likes || 0,
+                        comments: data.comments || 0,
+                        watch_time: data.watchTime || 0,
                         timestamp: new Date().toISOString()
                     }])
                     .select()
-                    .single()
+                    .single();
                 
-                if (error) throw error
+                if (error) {
+                    console.error('Error saving engagement data:', error);
+                    continue;
+                }
                 
-                // Update local state by removing any existing data for this content
-                engagementData = engagementData.filter(e => e.content_id !== item.id)
-                
-                // Add the new engagement data
-                engagementData.push(newEngagement)
+                // Update local state
+                engagementData = engagementData.filter(e => e.content_id !== item.id);
+                if (newEngagement) {
+                    engagementData.push(newEngagement);
+                }
             }
         } catch (error) {
-            console.error(`Error fetching engagement data for ${item.platform}:`, error)
-            showErrorNotification(`Error fetching engagement data for ${item.name}`)
+            console.error(`Error fetching engagement data for ${item.platform}:`, error);
+            showErrorNotification(`Error fetching data for "${item.name}": ${error.message}`);
         }
     }
 }
