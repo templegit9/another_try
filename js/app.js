@@ -220,46 +220,75 @@ async function loadUserData() {
 
 // Handle content form submission
 async function handleContentFormSubmit(e) {
-    e.preventDefault()
+    e.preventDefault();
     
+    const contentUrl = document.getElementById('content-url').value;
+    const platform = document.getElementById('content-source').value;
+    
+    if (!contentUrl) {
+        showErrorNotification('Please enter a URL');
+        return;
+    }
+
     const contentData = {
         user_id: currentUser.id,
         name: document.getElementById('content-name').value,
         description: document.getElementById('content-description').value,
-        platform: document.getElementById('content-source').value,
-        url: document.getElementById('content-url').value,
+        platform: platform,
+        url: contentUrl,
         content_id: extractContentId(contentUrl, platform),
         published_date: document.getElementById('content-published').value,
         duration: document.getElementById('content-duration').value,
         created_at: new Date().toISOString()
-    }
+    };
     
     try {
+        // Show loading state
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        const originalText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="material-icons animate-spin">refresh</span> Adding...';
+        
         // Add content to Supabase
-        const newContent = await addContent(contentData)
+        const { data: newContent, error } = await supabase
+            .from('content_items')
+            .insert([contentData])
+            .select()
+            .single();
+            
+        if (error) throw error;
         
         // Update local state
-        contentItems.push(newContent)
-        rebuildUrlContentMap()
+        contentItems.push(newContent);
+        rebuildUrlContentMap();
         
         // Fetch initial engagement data
-        await fetchEngagementData([newContent])
+        await fetchEngagementData([newContent]);
         
         // Update UI
-        renderContentItems()
-        renderEngagementData()
-        updateStats()
-        renderCharts()
+        renderContentItems();
+        renderEngagementData();
+        updateStats();
+        renderCharts();
         
         // Reset form
-        e.target.reset()
-        document.getElementById('content-published').valueAsDate = new Date()
-        document.getElementById('duplicate-warning').classList.add('hidden')
+        e.target.reset();
+        document.getElementById('content-published').valueAsDate = new Date();
+        document.getElementById('duplicate-warning').classList.add('hidden');
         
-        showSuccessNotification('Content added successfully')
+        // Collapse the add content section
+        document.getElementById('add-content-body').classList.add('hidden');
+        document.getElementById('toggle-add-content').querySelector('.material-icons').classList.remove('rotate-180');
+        
+        showSuccessNotification('Content added successfully');
     } catch (error) {
-        console.error('Error adding content:', error)
-        showErrorNotification('Error adding content')
+        console.error('Error adding content:', error);
+        showErrorNotification(error.message || 'Error adding content');
+    } finally {
+        // Reset button state
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<span class="material-icons mr-1">add</span> Add Content';
     }
 }
 
@@ -415,39 +444,49 @@ function toggleDarkMode(e) {
 // Set up main application event listeners
 function setupEventListeners() {
     // User menu dropdown
-    const userMenuButton = document.getElementById('user-menu-button')
-    const userDropdown = document.getElementById('user-dropdown')
+    const userMenuButton = document.getElementById('user-menu-button');
+    const userDropdown = document.getElementById('user-dropdown');
     
     userMenuButton.addEventListener('click', () => {
-        userDropdown.classList.toggle('hidden')
-    })
+        userDropdown.classList.toggle('hidden');
+    });
     
     // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
         if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
-            userDropdown.classList.add('hidden')
+            userDropdown.classList.add('hidden');
         }
-    })
+    });
     
     // Logout button
     document.getElementById('logout-button').addEventListener('click', async () => {
         try {
-            await signOut()
-            currentUser = null
-            showAuthScreen()
+            await signOut();
+            currentUser = null;
+            showAuthScreen();
         } catch (error) {
-            console.error('Error signing out:', error)
-            showErrorNotification('Error signing out')
+            console.error('Error signing out:', error);
+            showErrorNotification('Error signing out');
         }
-    })
+    });
     
     // Content form
-    const contentForm = document.getElementById('content-form')
-    const contentUrlField = document.getElementById('content-url')
-    
-    contentForm.addEventListener('submit', handleContentFormSubmit)
-    contentUrlField.addEventListener('blur', checkForDuplicateUrl)
-    document.getElementById('fetch-content-info').addEventListener('click', fetchContentInfo)
+    const contentForm = document.getElementById('content-form');
+    if (contentForm) {
+        contentForm.addEventListener('submit', handleContentFormSubmit);
+        
+        // URL field validation
+        const contentUrlField = document.getElementById('content-url');
+        if (contentUrlField) {
+            contentUrlField.addEventListener('blur', checkForDuplicateUrl);
+        }
+        
+        // Fetch content info button
+        const fetchInfoButton = document.getElementById('fetch-content-info');
+        if (fetchInfoButton) {
+            fetchInfoButton.addEventListener('click', fetchContentInfo);
+        }
+    }
     
     // Data actions
     document.getElementById('refresh-data').addEventListener('click', refreshEngagementData)
