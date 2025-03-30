@@ -976,7 +976,7 @@ async function fetchEngagementData(items) {
                         views: data.views || 0,
                         likes: data.likes || 0,
                         comments: data.comments || 0,
-                        watch_time: data.watchTime || 0,
+                        watch_hours: data.watchTime || 0,
                         timestamp: new Date().toISOString()
                     }])
                     .select(`
@@ -985,7 +985,7 @@ async function fetchEngagementData(items) {
                         views,
                         likes,
                         comments,
-                        watch_time,
+                        watch_hours,
                         timestamp
                     `)
                     .single();
@@ -1136,7 +1136,7 @@ function renderEngagementData() {
                 ${data.views.toLocaleString()}
             </td>
             <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                ${formatWatchTime(data.watch_time)}
+                ${formatWatchTime(data.watch_hours)}
             </td>
             <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
                 ${data.likes.toLocaleString()}
@@ -1153,11 +1153,11 @@ function renderEngagementData() {
 }
 
 // Format watch time in hours and minutes
-function formatWatchTime(minutes) {
-    if (!minutes || minutes === 0) return '0h'
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    return `${hours}h ${mins}m`
+function formatWatchTime(hours) {
+    if (!hours || hours === 0) return '0h'
+    const wholeHours = Math.floor(hours)
+    const minutes = Math.round((hours - wholeHours) * 60)
+    return minutes > 0 ? `${wholeHours}h ${minutes}m` : `${wholeHours}h`
 }
 
 // Update statistics cards

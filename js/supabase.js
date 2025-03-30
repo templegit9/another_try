@@ -129,7 +129,7 @@ export async function getEngagementData(userId) {
             views,
             likes,
             comments,
-            watch_time,
+            watch_hours,
             timestamp,
             content_items (
                 id,
