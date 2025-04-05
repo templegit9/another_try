@@ -34,13 +34,15 @@ async function initApp() {
     
     if (session) {
         await loginUser(session.user)
-        // Set up event listeners and collapsible sections after login
-        document.getElementById('save-api-config').addEventListener('click', handleApiConfigSave)
-        setupEventListeners()
-        setupCollapsibleSections()
     } else {
         showAuthScreen()
     }
+    
+    // Set up event listeners
+    document.getElementById('save-api-config').addEventListener('click', handleApiConfigSave)
+    
+    setupEventListeners()
+    setupCollapsibleSections()
 }
 
 // Handle login
@@ -179,9 +181,6 @@ async function loginUser(user) {
         
         // Load user data
         await loadUserData()
-        
-        // Set up collapsible sections (if not already done)
-        setupCollapsibleSections()
     } catch (error) {
         console.error('Error loading user data:', error)
         // If we can't load the user data, sign them out
@@ -2179,98 +2178,39 @@ function updateApiConfigUI() {
 // Set up collapsible sections
 function setupCollapsibleSections() {
     // Add content section
-    const addContentToggle = document.getElementById('toggle-add-content');
-    if (addContentToggle) {
-        const addContentBody = document.getElementById('add-content-body');
-        const addContentIcon = addContentToggle.querySelector('.material-icons');
-        
-        addContentToggle.addEventListener('click', () => {
-            addContentBody.classList.toggle('hidden');
-            addContentIcon.classList.toggle('rotate-180');
-        });
-        
-        // Initially expand section
-        addContentBody.classList.remove('hidden');
-    }
+    const addContentToggle = document.getElementById('toggle-add-content')
+    const addContentBody = document.getElementById('add-content-body')
+    const addContentIcon = addContentToggle.querySelector('.material-icons')
+    
+    addContentToggle.addEventListener('click', () => {
+        addContentBody.classList.toggle('hidden')
+        addContentIcon.classList.toggle('rotate-180')
+    })
     
     // Content library section
-    const contentLibraryToggle = document.getElementById('toggle-content-library');
-    if (contentLibraryToggle) {
-        const contentLibraryBody = document.getElementById('content-library-body');
-        const contentLibraryIcon = contentLibraryToggle.querySelector('.material-icons');
-        
-        contentLibraryToggle.addEventListener('click', () => {
-            contentLibraryBody.classList.toggle('hidden');
-            contentLibraryIcon.classList.toggle('rotate-180');
-        });
-        
-        // Initially expand section
-        contentLibraryBody.classList.remove('hidden');
-    }
+    const contentLibraryToggle = document.getElementById('toggle-content-library')
+    const contentLibraryBody = document.getElementById('content-library-body')
+    const contentLibraryIcon = contentLibraryToggle.querySelector('.material-icons')
+    
+    contentLibraryToggle.addEventListener('click', () => {
+        contentLibraryBody.classList.toggle('hidden')
+        contentLibraryIcon.classList.toggle('rotate-180')
+    })
     
     // Engagement data section
-    const engagementDataToggle = document.getElementById('toggle-engagement-data');
-    if (engagementDataToggle) {
-        const engagementDataBody = document.getElementById('engagement-data-body');
-        const engagementDataIcon = engagementDataToggle.querySelector('.material-icons');
-        
-        engagementDataToggle.addEventListener('click', () => {
-            engagementDataBody.classList.toggle('hidden');
-            engagementDataIcon.classList.toggle('rotate-180');
-        });
-        
-        // Initially expand section
-        engagementDataBody.classList.remove('hidden');
-    }
+    const engagementDataToggle = document.getElementById('toggle-engagement-data')
+    const engagementDataBody = document.getElementById('engagement-data-body')
+    const engagementDataIcon = engagementDataToggle.querySelector('.material-icons')
     
-    // Engagement trends section (new)
-    const engagementTrendsToggle = document.getElementById('toggle-engagement-trends');
-    if (engagementTrendsToggle) {
-        const engagementTrendsBody = document.getElementById('engagement-trends-body');
-        const engagementTrendsIcon = engagementTrendsToggle.querySelector('.material-icons');
-        
-        engagementTrendsToggle.addEventListener('click', () => {
-            engagementTrendsBody.classList.toggle('hidden');
-            engagementTrendsIcon.classList.toggle('rotate-180');
-            
-            // Save preference
-            localStorage.setItem('engagementTrendsCollapsed', engagementTrendsBody.classList.contains('hidden') ? 'true' : 'false');
-        });
-        
-        // Apply saved collapsed state
-        const isCollapsed = localStorage.getItem('engagementTrendsCollapsed') === 'true';
-        if (isCollapsed) {
-            engagementTrendsBody.classList.add('hidden');
-            engagementTrendsIcon.classList.add('rotate-180');
-        } else {
-            engagementTrendsBody.classList.remove('hidden');
-        }
-    }
+    engagementDataToggle.addEventListener('click', () => {
+        engagementDataBody.classList.toggle('hidden')
+        engagementDataIcon.classList.toggle('rotate-180')
+    })
     
-    // Apply trends visibility setting
-    const showTrendsToggle = document.getElementById('show-trends-toggle');
-    if (showTrendsToggle) {
-        showTrendsToggle.addEventListener('change', (e) => {
-            const trendsCard = document.getElementById('engagement-trends-card');
-            if (trendsCard) {
-                if (e.target.checked) {
-                    trendsCard.classList.remove('hidden');
-                } else {
-                    trendsCard.classList.add('hidden');
-                }
-                localStorage.setItem('showEngagementTrends', e.target.checked ? 'true' : 'false');
-            }
-        });
-        
-        // Apply saved visibility preference
-        const showTrends = localStorage.getItem('showEngagementTrends') !== 'false';
-        showTrendsToggle.checked = showTrends;
-        
-        const trendsCard = document.getElementById('engagement-trends-card');
-        if (trendsCard && !showTrends) {
-            trendsCard.classList.add('hidden');
-        }
-    }
+    // Initially expand all sections
+    addContentBody.classList.remove('hidden')
+    contentLibraryBody.classList.remove('hidden')
+    engagementDataBody.classList.remove('hidden')
 }
 
 // Initialize the app when the page loads
@@ -2512,90 +2452,4 @@ function renderTrendsChart() {
             }
         }
     });
-} 
-
-// Find the chart creation/update code (this is likely in a function that creates the trends chart)
-// Look for code with createChart or updateChart in its name
-
-// Replace or modify the chart options to include tooltips that show content names
-function createTrendsChart(data) {
-    const ctx = document.getElementById('trends-chart').getContext('2d');
-    
-    // Map content IDs to names for tooltip display
-    const contentNames = {};
-    contentItems.forEach(item => {
-        contentNames[item.id] = item.name;
-    });
-    
-    // Create or update chart
-    if (window.trendsChart) {
-        window.trendsChart.destroy();
-    }
-    
-    window.trendsChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.labels,
-            datasets: data.datasets.map(dataset => ({
-                ...dataset,
-                // Store content ID in the dataset for tooltip use
-                contentId: dataset.contentId
-            }))
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        title: function(tooltipItems) {
-                            // Get the content ID from the dataset
-                            const contentId = tooltipItems[0].dataset.contentId;
-                            // Return the content name if available, otherwise use the original label
-                            return contentNames[contentId] || tooltipItems[0].label;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: {
-                        color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-                    }
-                }
-            }
-        }
-    });
-}
-
-// When preparing chart data, make sure to include content IDs:
-function prepareTrendsChartData() {
-    // Example of how the datasets should be structured
-    const datasets = contentItems.map((item, index) => {
-        const itemEngagements = engagementData
-            .filter(data => data.content_id === item.id)
-            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            
-        return {
-            label: item.id, // Use ID as the label (not shown to user)
-            contentId: item.id, // Store content ID for tooltip
-            data: itemEngagements.map(e => e.views),
-            borderColor: getChartColor(index),
-            backgroundColor: getChartColor(index, 0.2),
-            tension: 0.3
-        };
-    });
-    
-    // Other data processing...
-    
-    return {
-        labels: [...], // Your time labels
-        datasets: datasets
-    };
 } 
