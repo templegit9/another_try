@@ -2453,3 +2453,89 @@ function renderTrendsChart() {
         }
     });
 } 
+
+// Find the chart creation/update code (this is likely in a function that creates the trends chart)
+// Look for code with createChart or updateChart in its name
+
+// Replace or modify the chart options to include tooltips that show content names
+function createTrendsChart(data) {
+    const ctx = document.getElementById('trends-chart').getContext('2d');
+    
+    // Map content IDs to names for tooltip display
+    const contentNames = {};
+    contentItems.forEach(item => {
+        contentNames[item.id] = item.name;
+    });
+    
+    // Create or update chart
+    if (window.trendsChart) {
+        window.trendsChart.destroy();
+    }
+    
+    window.trendsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: data.datasets.map(dataset => ({
+                ...dataset,
+                // Store content ID in the dataset for tooltip use
+                contentId: dataset.contentId
+            }))
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            // Get the content ID from the dataset
+                            const contentId = tooltipItems[0].dataset.contentId;
+                            // Return the content name if available, otherwise use the original label
+                            return contentNames[contentId] || tooltipItems[0].label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// When preparing chart data, make sure to include content IDs:
+function prepareTrendsChartData() {
+    // Example of how the datasets should be structured
+    const datasets = contentItems.map((item, index) => {
+        const itemEngagements = engagementData
+            .filter(data => data.content_id === item.id)
+            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+        return {
+            label: item.id, // Use ID as the label (not shown to user)
+            contentId: item.id, // Store content ID for tooltip
+            data: itemEngagements.map(e => e.views),
+            borderColor: getChartColor(index),
+            backgroundColor: getChartColor(index, 0.2),
+            tension: 0.3
+        };
+    });
+    
+    // Other data processing...
+    
+    return {
+        labels: [...], // Your time labels
+        datasets: datasets
+    };
+} 
