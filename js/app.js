@@ -34,15 +34,13 @@ async function initApp() {
     
     if (session) {
         await loginUser(session.user)
+        // Set up event listeners and collapsible sections after login
+        document.getElementById('save-api-config').addEventListener('click', handleApiConfigSave)
+        setupEventListeners()
+        setupCollapsibleSections()
     } else {
         showAuthScreen()
     }
-    
-    // Set up event listeners
-    document.getElementById('save-api-config').addEventListener('click', handleApiConfigSave)
-    
-    setupEventListeners()
-    setupCollapsibleSections()
 }
 
 // Handle login
@@ -181,6 +179,9 @@ async function loginUser(user) {
         
         // Load user data
         await loadUserData()
+        
+        // Set up collapsible sections (if not already done)
+        setupCollapsibleSections()
     } catch (error) {
         console.error('Error loading user data:', error)
         // If we can't load the user data, sign them out
@@ -2178,39 +2179,98 @@ function updateApiConfigUI() {
 // Set up collapsible sections
 function setupCollapsibleSections() {
     // Add content section
-    const addContentToggle = document.getElementById('toggle-add-content')
-    const addContentBody = document.getElementById('add-content-body')
-    const addContentIcon = addContentToggle.querySelector('.material-icons')
-    
-    addContentToggle.addEventListener('click', () => {
-        addContentBody.classList.toggle('hidden')
-        addContentIcon.classList.toggle('rotate-180')
-    })
+    const addContentToggle = document.getElementById('toggle-add-content');
+    if (addContentToggle) {
+        const addContentBody = document.getElementById('add-content-body');
+        const addContentIcon = addContentToggle.querySelector('.material-icons');
+        
+        addContentToggle.addEventListener('click', () => {
+            addContentBody.classList.toggle('hidden');
+            addContentIcon.classList.toggle('rotate-180');
+        });
+        
+        // Initially expand section
+        addContentBody.classList.remove('hidden');
+    }
     
     // Content library section
-    const contentLibraryToggle = document.getElementById('toggle-content-library')
-    const contentLibraryBody = document.getElementById('content-library-body')
-    const contentLibraryIcon = contentLibraryToggle.querySelector('.material-icons')
-    
-    contentLibraryToggle.addEventListener('click', () => {
-        contentLibraryBody.classList.toggle('hidden')
-        contentLibraryIcon.classList.toggle('rotate-180')
-    })
+    const contentLibraryToggle = document.getElementById('toggle-content-library');
+    if (contentLibraryToggle) {
+        const contentLibraryBody = document.getElementById('content-library-body');
+        const contentLibraryIcon = contentLibraryToggle.querySelector('.material-icons');
+        
+        contentLibraryToggle.addEventListener('click', () => {
+            contentLibraryBody.classList.toggle('hidden');
+            contentLibraryIcon.classList.toggle('rotate-180');
+        });
+        
+        // Initially expand section
+        contentLibraryBody.classList.remove('hidden');
+    }
     
     // Engagement data section
-    const engagementDataToggle = document.getElementById('toggle-engagement-data')
-    const engagementDataBody = document.getElementById('engagement-data-body')
-    const engagementDataIcon = engagementDataToggle.querySelector('.material-icons')
+    const engagementDataToggle = document.getElementById('toggle-engagement-data');
+    if (engagementDataToggle) {
+        const engagementDataBody = document.getElementById('engagement-data-body');
+        const engagementDataIcon = engagementDataToggle.querySelector('.material-icons');
+        
+        engagementDataToggle.addEventListener('click', () => {
+            engagementDataBody.classList.toggle('hidden');
+            engagementDataIcon.classList.toggle('rotate-180');
+        });
+        
+        // Initially expand section
+        engagementDataBody.classList.remove('hidden');
+    }
     
-    engagementDataToggle.addEventListener('click', () => {
-        engagementDataBody.classList.toggle('hidden')
-        engagementDataIcon.classList.toggle('rotate-180')
-    })
+    // Engagement trends section (new)
+    const engagementTrendsToggle = document.getElementById('toggle-engagement-trends');
+    if (engagementTrendsToggle) {
+        const engagementTrendsBody = document.getElementById('engagement-trends-body');
+        const engagementTrendsIcon = engagementTrendsToggle.querySelector('.material-icons');
+        
+        engagementTrendsToggle.addEventListener('click', () => {
+            engagementTrendsBody.classList.toggle('hidden');
+            engagementTrendsIcon.classList.toggle('rotate-180');
+            
+            // Save preference
+            localStorage.setItem('engagementTrendsCollapsed', engagementTrendsBody.classList.contains('hidden') ? 'true' : 'false');
+        });
+        
+        // Apply saved collapsed state
+        const isCollapsed = localStorage.getItem('engagementTrendsCollapsed') === 'true';
+        if (isCollapsed) {
+            engagementTrendsBody.classList.add('hidden');
+            engagementTrendsIcon.classList.add('rotate-180');
+        } else {
+            engagementTrendsBody.classList.remove('hidden');
+        }
+    }
     
-    // Initially expand all sections
-    addContentBody.classList.remove('hidden')
-    contentLibraryBody.classList.remove('hidden')
-    engagementDataBody.classList.remove('hidden')
+    // Apply trends visibility setting
+    const showTrendsToggle = document.getElementById('show-trends-toggle');
+    if (showTrendsToggle) {
+        showTrendsToggle.addEventListener('change', (e) => {
+            const trendsCard = document.getElementById('engagement-trends-card');
+            if (trendsCard) {
+                if (e.target.checked) {
+                    trendsCard.classList.remove('hidden');
+                } else {
+                    trendsCard.classList.add('hidden');
+                }
+                localStorage.setItem('showEngagementTrends', e.target.checked ? 'true' : 'false');
+            }
+        });
+        
+        // Apply saved visibility preference
+        const showTrends = localStorage.getItem('showEngagementTrends') !== 'false';
+        showTrendsToggle.checked = showTrends;
+        
+        const trendsCard = document.getElementById('engagement-trends-card');
+        if (trendsCard && !showTrends) {
+            trendsCard.classList.add('hidden');
+        }
+    }
 }
 
 // Initialize the app when the page loads
