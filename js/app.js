@@ -637,43 +637,7 @@ function toggleDarkMode(e) {
 
 // Set up main application event listeners
 function setupEventListeners() {
-    // User menu dropdown
-    const userMenuButton = document.getElementById('user-menu-button');
-    const userDropdown = document.getElementById('user-dropdown');
-    
-    if (userMenuButton && userDropdown) {
-        // Define the toggle function
-        function toggleUserDropdown(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Toggle visibility using both class and direct style manipulation
-            if (userDropdown.classList.contains('hidden')) {
-                userDropdown.classList.remove('hidden');
-                userDropdown.style.display = 'block';
-                userDropdown.style.zIndex = '9999'; // Ensure high z-index
-                userDropdown.style.position = 'absolute'; // Confirm absolute positioning
-            } else {
-                userDropdown.classList.add('hidden');
-                userDropdown.style.display = 'none';
-            }
-            console.log('User dropdown toggled, current state:', !userDropdown.classList.contains('hidden'));
-        }
-        
-        // Remove any existing event listeners to prevent duplication
-        userMenuButton.removeEventListener('click', toggleUserDropdown);
-        
-        // Add click listener
-        userMenuButton.addEventListener('click', toggleUserDropdown);
-        
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (e.target !== userMenuButton && !userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
-                userDropdown.classList.add('hidden');
-                userDropdown.style.display = 'none';
-            }
-        });
-    }
+    // User dropdown is now handled by setupUserDropdown()
     
     // Logout button
     const logoutButton = document.getElementById('logout-button');
@@ -688,6 +652,26 @@ function setupEventListeners() {
                 showErrorNotification('Error signing out');
             }
         });
+    }
+    
+    // Profile modal close button
+    const closeProfileModal = document.getElementById('close-profile-modal');
+    if (closeProfileModal) {
+        closeProfileModal.addEventListener('click', () => {
+            document.getElementById('profile-modal').classList.add('hidden');
+        });
+    }
+    
+    // Save profile button
+    const saveProfileButton = document.getElementById('save-profile');
+    if (saveProfileButton) {
+        saveProfileButton.addEventListener('click', saveUserProfile);
+    }
+    
+    // Delete account button
+    const deleteAccountButton = document.getElementById('delete-account');
+    if (deleteAccountButton) {
+        deleteAccountButton.addEventListener('click', confirmDeleteAccount);
     }
     
     // Export/Import data
@@ -2476,4 +2460,81 @@ async function fetchSlackEngagement(item) {
     // For demo purposes, return simulated data
     // In production, this would make an actual API call
     return generateMockEngagementData();
+}
+
+// User menu dropdown
+function setupUserDropdown() {
+    const userMenuButton = document.getElementById('user-menu-button');
+    const userDropdown = document.getElementById('user-dropdown');
+    
+    if (!userMenuButton || !userDropdown) return;
+    
+    // Remove any existing event listeners by cloning and replacing
+    const newButton = userMenuButton.cloneNode(true);
+    userMenuButton.parentNode.replaceChild(newButton, userMenuButton);
+    
+    // Reset dropdown state
+    userDropdown.classList.add('hidden');
+    userDropdown.style.display = 'none';
+    userDropdown.style.position = 'absolute';
+    userDropdown.style.zIndex = '9999';
+    
+    // Add click listener to button
+    newButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const isHidden = userDropdown.classList.contains('hidden');
+        
+        // Toggle visibility
+        if (isHidden) {
+            userDropdown.classList.remove('hidden');
+            userDropdown.style.display = 'block';
+        } else {
+            userDropdown.classList.add('hidden');
+            userDropdown.style.display = 'none';
+        }
+        
+        console.log('User dropdown toggled, current state:', !isHidden);
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!newButton.contains(e.target) && !userDropdown.contains(e.target)) {
+            userDropdown.classList.add('hidden');
+            userDropdown.style.display = 'none';
+        }
+    });
+    
+    // Close dropdown when clicking on menu items
+    const dropdownItems = userDropdown.querySelectorAll('a, button');
+    dropdownItems.forEach(item => {
+        item.addEventListener('click', function() {
+            userDropdown.classList.add('hidden');
+            userDropdown.style.display = 'none';
+        });
+    });
+    
+    // Set up profile link functionality
+    const profileLink = document.getElementById('user-profile-link');
+    if (profileLink) {
+        profileLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            showUserProfile();
+        });
+    }
+}
+
+// Initialize the state of the user dropdown
+function initializeUserDropdown() {
+    const userDropdown = document.getElementById('user-dropdown');
+    if (userDropdown) {
+        userDropdown.classList.add('hidden');
+        userDropdown.style.display = 'none';
+        userDropdown.style.position = 'absolute';
+        userDropdown.style.zIndex = '9999';
+    }
+    
+    // Initialize the dropdown functionality
+    setupUserDropdown();
 }
