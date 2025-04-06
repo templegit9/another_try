@@ -641,6 +641,20 @@ function setupEventListeners() {
         }
     });
     
+    // Export/Import data
+    document.getElementById('export-data-dropdown').addEventListener('click', exportData);
+    document.getElementById('import-data-dropdown').addEventListener('click', showImportModal);
+    document.getElementById('close-import-modal').addEventListener('click', () => {
+        document.getElementById('import-modal').classList.add('hidden');
+        document.getElementById('file-info').classList.add('hidden');
+        document.getElementById('import-preview').classList.add('hidden');
+        document.getElementById('import-data-btn').disabled = true;
+        document.getElementById('import-message').classList.add('hidden');
+        document.getElementById('import-error').classList.add('hidden');
+    });
+    document.getElementById('import-file').addEventListener('change', handleFileSelection);
+    document.getElementById('import-data-btn').addEventListener('click', importData);
+    
     // Content form
     const contentForm = document.getElementById('add-content-form');
     if (contentForm) {
@@ -2452,4 +2466,247 @@ function renderTrendsChart() {
             }
         }
     });
-} 
+}
+
+// Export data functionality
+async function exportData() {
+    try {
+        // Prepare data for export
+        const exportData = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            user: {
+                id: currentUser.id,
+                name: currentUser.name,
+                email: currentUser.email
+            },
+            content: contentItems,
+            engagement: engagementData,
+            apiConfig: apiConfig
+        };
+        
+        // Convert to JSON and create blob
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        
+        // Create download link
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = `platform-engagement-export-${new Date().toISOString().split('T')[0]}.json`;
+        
+        // Trigger download
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Close dropdown
+        document.getElementById('user-dropdown').classList.add('hidden');
+        
+        showSuccessNotification('Data exported successfully');
+    } catch (error) {
+        console.error('Error exporting data:', error);
+        showErrorNotification('Error exporting data: ' + error.message);
+    }
+}
+
+// Show the import modal
+function showImportModal() {
+    document.getElementById('import-modal').classList.remove('hidden');
+    document.getElementById('user-dropdown').classList.add('hidden');
+    document.getElementById('import-file').value = '';
+    document.getElementById('file-info').classList.add('hidden');
+    document.getElementById('import-preview').classList.add('hidden');
+    document.getElementById('import-data-btn').disabled = true;
+    document.getElementById('import-message').classList.add('hidden');
+    document.getElementById('import-error').classList.add('hidden');
+}
+
+// Handle file selection for import
+function handleFileSelection(event) {
+    const file = event.target.files[0];
+    const fileInfo = document.getElementById('file-info');
+    const previewElement = document.getElementById('import-preview');
+    const importButton = document.getElementById('import-data-btn');
+    const importError = document.getElementById('import-error');
+    
+    if (!file) {
+        fileInfo.classList.add('hidden');
+        previewElement.classList.add('hidden');
+        importButton.disabled = true;
+        return;
+    }
+    
+    // Check file type
+    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+        fileInfo.textContent = 'Error: Please select a valid JSON file.';
+        fileInfo.classList.remove('hidden');
+        fileInfo.classList.add('text-red-500');
+        previewElement.classList.add('hidden');
+        importButton.disabled = true;
+        return;
+    }
+    
+    // Show file info
+    fileInfo.textContent = `Selected file: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+    fileInfo.classList.remove('hidden', 'text-red-500');
+    fileInfo.classList.add('text-green-500');
+    
+    // Read file content
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            // Validate data structure
+            if (!data.content || !data.engagement || !data.user) {
+                throw new Error('Invalid data format');
+            }
+            
+            // Store data for import
+            window.importData = data;
+            
+            // Show preview
+            document.getElementById('preview-content-count').textContent = data.content.length.toLocaleString();
+            document.getElementById('preview-engagement-count').textContent = data.engagement.length.toLocaleString();
+            document.getElementById('preview-export-date').textContent = new Date(data.timestamp).toLocaleString();
+            document.getElementById('preview-user').textContent = data.user.name || data.user.email;
+            
+            previewElement.classList.remove('hidden');
+            importButton.disabled = false;
+            importError.classList.add('hidden');
+        } catch (error) {
+            console.error('Error parsing import file:', error);
+            fileInfo.textContent = 'Error: Invalid JSON format or unsupported data structure.';
+            fileInfo.classList.remove('text-green-500');
+            fileInfo.classList.add('text-red-500');
+            previewElement.classList.add('hidden');
+            importButton.disabled = true;
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+// Import data from the selected file
+async function importData() {
+    if (!window.importData) {
+        showErrorNotification('No import data available');
+        return;
+    }
+    
+    const importOption = document.querySelector('input[name="import-option"]:checked').value;
+    const importButton = document.getElementById('import-data-btn');
+    const importMessage = document.getElementById('import-message');
+    const importError = document.getElementById('import-error');
+    
+    try {
+        // Show loading state
+        importButton.disabled = true;
+        const originalText = importButton.innerHTML;
+        importButton.innerHTML = '<span class="material-icons animate-spin">refresh</span> Importing...';
+        
+        if (importOption === 'replace') {
+            // Clear existing data if replace option is selected
+            await clearUserData();
+        }
+        
+        // Import content items
+        for (const item of window.importData.content) {
+            // Skip if this content already exists (by URL) and we're merging
+            const normalizedUrl = normalizeUrl(item.url);
+            if (importOption === 'merge' && urlToContentMap[normalizedUrl]) {
+                continue;
+            }
+            
+            // Make sure the item has the current user's ID
+            const contentData = {
+                ...item,
+                user_id: currentUser.id,
+                id: undefined  // Remove any existing ID to create a new record
+            };
+            
+            // Add to database
+            const newItem = await addContent(contentData);
+            contentItems.push(newItem);
+        }
+        
+        // Rebuild URL map
+        rebuildUrlContentMap();
+        
+        // Import engagement data
+        for (const engagement of window.importData.engagement) {
+            // Find the corresponding content item
+            const originalContentId = engagement.content_id;
+            const originalContent = window.importData.content.find(c => c.id === originalContentId);
+            
+            if (!originalContent) continue;
+            
+            // Find the new content ID for this URL
+            const normalizedUrl = normalizeUrl(originalContent.url);
+            const newContentId = urlToContentMap[normalizedUrl];
+            if (!newContentId) continue;
+            
+            // Create new engagement record with the new content ID
+            const engagementData = {
+                ...engagement,
+                id: undefined,  // Remove any existing ID
+                content_id: newContentId,
+                timestamp: engagement.timestamp || new Date().toISOString()
+            };
+            
+            // Add to database
+            const newEngagement = await addEngagementData(engagementData);
+            engagementData.push(newEngagement);
+        }
+        
+        // Import API configuration if available
+        if (window.importData.apiConfig) {
+            for (const [platform, config] of Object.entries(window.importData.apiConfig)) {
+                if (!config || Object.keys(config).length === 0) continue;
+                
+                apiConfig[platform] = config;
+                await saveApiConfig(currentUser.id, platform, config);
+            }
+            
+            updateApiConfigUI();
+        }
+        
+        // Reload and render data
+        await loadUserData();
+        
+        // Show success message
+        importMessage.textContent = 'Import completed successfully!';
+        importMessage.classList.remove('hidden');
+        
+        // Clear import data
+        window.importData = null;
+        
+        showSuccessNotification('Data imported successfully');
+    } catch (error) {
+        console.error('Error importing data:', error);
+        importError.textContent = 'Error importing data: ' + error.message;
+        importError.classList.remove('hidden');
+        importMessage.classList.add('hidden');
+        showErrorNotification('Error importing data: ' + error.message);
+    } finally {
+        // Reset button state
+        importButton.disabled = false;
+        importButton.innerHTML = '<span class="material-icons mr-1">upload</span> Import Data';
+    }
+}
+
+// Helper function to clear all user data
+async function clearUserData() {
+    // Delete all content items (will cascade delete engagement data due to foreign key)
+    for (const item of contentItems) {
+        await deleteContent(item.id);
+    }
+    
+    // Clear local data
+    contentItems = [];
+    engagementData = [];
+    urlToContentMap = {};
+}
+
+// Initialize the app when the page loads
+document.addEventListener('DOMContentLoaded', initApp);
