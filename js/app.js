@@ -735,10 +735,17 @@ function setupEventListeners() {
     const showSettingsBtn = document.getElementById('show-settings-link');
     const hideSettingsBtn = document.getElementById('hide-settings');
     
-    if (showSettingsBtn && apiSettingsSection && userDropdown) {
+    if (showSettingsBtn && apiSettingsSection) {
         showSettingsBtn.addEventListener('click', () => {
+            // Get the user dropdown element directly when needed
+            const userDropdown = document.getElementById('user-dropdown');
+            
+            // Show settings and hide dropdown
             apiSettingsSection.classList.remove('hidden');
-            userDropdown.classList.add('hidden');
+            if (userDropdown) {
+                userDropdown.classList.add('hidden');
+                userDropdown.style.display = 'none';
+            }
         });
     }
     
