@@ -1403,3 +1403,125 @@ async function clearUserData() {
 
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Normalize URL to prevent duplicates
+function normalizeUrl(url) {
+    try {
+        const urlObj = new URL(url);
+        // Remove common tracking parameters
+        urlObj.searchParams.delete('utm_source');
+        urlObj.searchParams.delete('utm_medium');
+        urlObj.searchParams.delete('utm_campaign');
+        urlObj.searchParams.delete('utm_content');
+        urlObj.searchParams.delete('utm_term');
+        urlObj.searchParams.delete('feature');
+        // Remove hash
+        urlObj.hash = '';
+        return urlObj.toString();
+    } catch (e) {
+        // If URL parsing fails, return original
+        return url;
+    }
+}
+
+// Check for duplicate URL
+function checkForDuplicateUrl() {
+    const contentUrl = document.getElementById('add-content-url').value;
+    const warningElement = document.getElementById('add-duplicate-warning');
+    
+    if (!contentUrl) {
+        warningElement.classList.add('hidden');
+        return;
+    }
+    
+    try {
+        const normalizedUrl = normalizeUrl(contentUrl);
+        const isDuplicate = contentItems.some(item => normalizeUrl(item.url) === normalizedUrl);
+        
+        if (isDuplicate) {
+            warningElement.classList.remove('hidden');
+        } else {
+            warningElement.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Error checking URL:', error);
+        warningElement.classList.add('hidden');
+    }
+}
+
+// Extract content ID from URL based on platform
+function extractContentId(url, platform) {
+    try {
+        const urlObj = new URL(url);
+        
+        switch (platform.toLowerCase()) {
+            case 'youtube':
+                // YouTube URLs can be in formats:
+                // https://www.youtube.com/watch?v=VIDEO_ID
+                // https://youtu.be/VIDEO_ID
+                // https://www.youtube.com/embed/VIDEO_ID
+                if (urlObj.hostname.includes('youtu.be')) {
+                    return urlObj.pathname.substring(1);
+                } else if (urlObj.searchParams.has('v')) {
+                    return urlObj.searchParams.get('v');
+                } else if (urlObj.pathname.includes('/embed/')) {
+                    return urlObj.pathname.split('/embed/')[1];
+                }
+                break;
+                
+            case 'linkedin':
+                // LinkedIn post URLs typically contain an activity ID
+                // https://www.linkedin.com/posts/username_activity-ACTIVITY_ID
+                if (urlObj.pathname.includes('/posts/')) {
+                    const match = urlObj.pathname.match(/activity-(\d+)/);
+                    if (match && match[1]) return match[1];
+                }
+                
+                // For articles
+                if (urlObj.pathname.includes('/pulse/')) {
+                    return urlObj.pathname.split('/pulse/')[1];
+                }
+                break;
+                
+            case 'twitter':
+                // Twitter URLs: https://twitter.com/username/status/TWEET_ID
+                if (urlObj.pathname.includes('/status/')) {
+                    return urlObj.pathname.split('/status/')[1];
+                }
+                break;
+                
+            case 'reddit':
+                // Reddit URLs: https://www.reddit.com/r/subreddit/comments/POST_ID/
+                if (urlObj.pathname.includes('/comments/')) {
+                    const parts = urlObj.pathname.split('/');
+                    const index = parts.indexOf('comments');
+                    if (index !== -1 && parts.length > index + 1) {
+                        return parts[index + 1];
+                    }
+                }
+                break;
+                
+            case 'servicenow':
+                // ServiceNow community URLs might have post IDs
+                if (urlObj.pathname.includes('/now-community/')) {
+                    return urlObj.pathname.split('/').pop();
+                }
+                break;
+                
+            case 'slack':
+                // Slack URLs with message IDs
+                if (urlObj.hash && urlObj.hash.includes('thread_')) {
+                    return urlObj.hash.split('thread_')[1];
+                }
+                break;
+        }
+        
+        // If we can't extract a specific ID, use a hash of the URL
+        return btoa(url).replace(/[/+=]/g, '').substring(0, 16);
+        
+    } catch (e) {
+        // If URL parsing fails, generate a random ID
+        console.error('Error extracting content ID:', e);
+        return Math.random().toString(36).substring(2, 15);
+    }
+}
