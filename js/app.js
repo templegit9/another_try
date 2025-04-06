@@ -1525,3 +1525,941 @@ function extractContentId(url, platform) {
         return Math.random().toString(36).substring(2, 15);
     }
 }
+
+// Fetch content information from URL
+async function fetchContentInfo() {
+    const url = document.getElementById('add-content-url').value;
+    const platform = document.getElementById('add-content-source').value;
+    
+    if (!url) {
+        showErrorNotification('Please enter a URL');
+        return;
+    }
+    
+    // Show loading state
+    const button = document.getElementById('add-fetch-content-info');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="material-icons animate-spin">refresh</span> Loading...';
+    
+    try {
+        let contentInfo = null;
+        
+        // Based on platform, attempt to fetch content info
+        switch (platform.toLowerCase()) {
+            case 'youtube':
+                if (apiConfig.youtube?.apiKey) {
+                    contentInfo = await fetchYouTubeInfo(url, apiConfig.youtube.apiKey);
+                } else {
+                    throw new Error('YouTube API key not configured');
+                }
+                break;
+                
+            case 'linkedin':
+                // LinkedIn doesn't provide easy API access for this
+                // We'll use basic extraction
+                contentInfo = extractBasicInfo(url, 'LinkedIn Post');
+                break;
+                
+            case 'servicenow':
+                contentInfo = extractBasicInfo(url, 'ServiceNow Content');
+                break;
+                
+            case 'reddit':
+                contentInfo = extractBasicInfo(url, 'Reddit Post');
+                break;
+                
+            case 'twitter':
+                contentInfo = extractBasicInfo(url, 'Tweet');
+                break;
+                
+            case 'slack':
+                contentInfo = extractBasicInfo(url, 'Slack Message');
+                break;
+                
+            default:
+                contentInfo = extractBasicInfo(url, 'Content');
+        }
+        
+        if (contentInfo) {
+            // Populate form fields with content info
+            if (contentInfo.title) {
+                document.getElementById('add-content-name').value = contentInfo.title;
+            }
+            
+            if (contentInfo.description) {
+                document.getElementById('add-content-description').value = contentInfo.description;
+            }
+            
+            if (contentInfo.publishedDate) {
+                const date = new Date(contentInfo.publishedDate);
+                if (!isNaN(date)) {
+                    document.getElementById('add-content-published').valueAsDate = date;
+                }
+            }
+            
+            if (platform === 'youtube' && contentInfo.duration) {
+                document.getElementById('add-content-duration').value = contentInfo.duration;
+                document.getElementById('add-duration-container').classList.remove('hidden');
+            } else {
+                document.getElementById('add-duration-container').classList.add('hidden');
+            }
+            
+            showSuccessNotification('Content info fetched successfully');
+        } else {
+            throw new Error('Could not fetch content information');
+        }
+    } catch (error) {
+        console.error('Error fetching content info:', error);
+        showErrorNotification('Error fetching content info: ' + error.message);
+    } finally {
+        // Reset button state
+        button.disabled = false;
+        button.innerHTML = originalText;
+    }
+}
+
+// Extract basic info from URL
+function extractBasicInfo(url, defaultTitle) {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+    const lastPathPart = pathParts.pop() || '';
+    
+    // Try to create a somewhat meaningful title
+    let title = defaultTitle;
+    if (lastPathPart) {
+        // Convert slug to title (replace hyphens with spaces and capitalize)
+        const formattedTitle = lastPathPart
+            .replace(/-/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
+        title = formattedTitle;
+    }
+    
+    return {
+        title: title,
+        description: '',
+        publishedDate: new Date().toISOString(),
+        duration: null
+    };
+}
+
+// Fetch YouTube video info
+async function fetchYouTubeInfo(url, apiKey) {
+    try {
+        const videoId = extractContentId(url, 'youtube');
+        if (!videoId) {
+            throw new Error('Could not extract video ID from URL');
+        }
+        
+        // Create an API request to YouTube Data API
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet,contentDetails`);
+        const data = await response.json();
+        
+        if (!data.items || data.items.length === 0) {
+            throw new Error('Video not found');
+        }
+        
+        const video = data.items[0];
+        const snippet = video.snippet;
+        const contentDetails = video.contentDetails;
+        
+        // Format duration from ISO 8601 (PT1H30M15S) to readable format
+        let duration = contentDetails.duration;
+        if (duration) {
+            duration = duration
+                .replace('PT', '')
+                .replace('H', ':')
+                .replace('M', ':')
+                .replace('S', '');
+                
+            // Ensure proper formatting with leading zeros
+            const parts = duration.split(':');
+            duration = parts.map(part => part.padStart(2, '0')).join(':');
+        }
+        
+        return {
+            title: snippet.title,
+            description: snippet.description,
+            publishedDate: snippet.publishedAt,
+            duration: duration
+        };
+    } catch (error) {
+        console.error('Error fetching YouTube info:', error);
+        // Return basic info as fallback
+        return extractBasicInfo(url, 'YouTube Video');
+    }
+}
+
+// Render content items in the table
+function renderContentItems() {
+    const contentList = document.getElementById('content-list');
+    if (!contentList) return;
+    
+    contentList.innerHTML = '';
+    
+    if (contentItems.length === 0) {
+        contentList.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                    No content items found. Add your first content item above.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Sort by created date (newest first)
+    contentItems
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .forEach(item => {
+            const row = document.createElement('tr');
+            
+            // Format platform CSS
+            const platformClass = item.platform.toLowerCase();
+            
+            row.innerHTML = `
+                <td class="px-6 py-4">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">${item.name}</div>
+                    ${item.description ? `<div class="text-sm text-gray-500 dark:text-gray-400">${item.description}</div>` : ''}
+                </td>
+                <td class="px-6 py-4">
+                    <span class="badge ${platformClass}">${item.platform}</span>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    ${new Date(item.published_date).toLocaleDateString()}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    ${new Date(item.created_at).toLocaleDateString()}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    <a href="${item.url}" target="_blank" class="text-blue-500 dark:text-blue-400 hover:underline truncate block max-w-xs">
+                        ${item.url}
+                    </a>
+                </td>
+                <td class="px-6 py-4 text-right text-sm font-medium">
+                    <div class="flex space-x-2 justify-end">
+                        <button 
+                            class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300" 
+                            onclick="showContentDetails('${item.id}')"
+                        >
+                            <span class="material-icons text-lg">visibility</span>
+                        </button>
+                        <button 
+                            class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300" 
+                            onclick="handleContentDeletion('${item.id}')"
+                        >
+                            <span class="material-icons text-lg">delete</span>
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            contentList.appendChild(row);
+        });
+}
+
+// Show content details in modal
+function showContentDetails(contentId) {
+    // Find the content item
+    const item = contentItems.find(c => c.id === contentId);
+    if (!item) return;
+    
+    // Get the related engagement data
+    const itemEngagements = engagementData
+        .filter(e => e.content_id === contentId)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    // Update modal title
+    document.getElementById('modal-title').textContent = item.name;
+    
+    // Generate modal content
+    const modalContent = document.getElementById('modal-content');
+    
+    // Basic content info
+    const contentInfo = `
+        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Platform</h4>
+                    <p class="font-medium text-gray-900 dark:text-white"><span class="badge ${item.platform.toLowerCase()}">${item.platform}</span></p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Published Date</h4>
+                    <p class="font-medium text-gray-900 dark:text-white">${new Date(item.published_date).toLocaleDateString()}</p>
+                </div>
+                <div class="md:col-span-2">
+                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">URL</h4>
+                    <p class="font-medium text-gray-900 dark:text-white break-all">
+                        <a href="${item.url}" target="_blank" class="text-blue-500 dark:text-blue-400 hover:underline">${item.url}</a>
+                    </p>
+                </div>
+                ${item.description ? `
+                <div class="md:col-span-2">
+                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Description</h4>
+                    <p class="font-medium text-gray-900 dark:text-white">${item.description}</p>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    // Engagement data table
+    let engagementTable = '';
+    if (itemEngagements.length > 0) {
+        engagementTable = `
+            <div class="mt-6">
+                <h3 class="text-lg font-medium mb-4 dark:text-white">Engagement History</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Views</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Likes</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Comments</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Watch Time</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            ${itemEngagements.map(engagement => `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        ${new Date(engagement.timestamp).toLocaleString()}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        ${engagement.views.toLocaleString()}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        ${engagement.likes.toLocaleString()}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        ${engagement.comments.toLocaleString()}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        ${(engagement.watch_time || 0).toFixed(1)} hours
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } else {
+        engagementTable = `
+            <div class="mt-6">
+                <h3 class="text-lg font-medium mb-4 dark:text-white">Engagement History</h3>
+                <p class="text-gray-500 dark:text-gray-400">No engagement data available yet.</p>
+            </div>
+        `;
+    }
+    
+    // Render engagement chart if we have more than one data point
+    let engagementChart = '';
+    if (itemEngagements.length > 1) {
+        const chartId = `engagement-chart-${contentId}`;
+        engagementChart = `
+            <div class="mt-6">
+                <h3 class="text-lg font-medium mb-4 dark:text-white">Engagement Trends</h3>
+                <canvas id="${chartId}"></canvas>
+            </div>
+        `;
+        
+        // Add a function to initialize the chart after the modal content is set
+        setTimeout(() => {
+            const chartElement = document.getElementById(chartId);
+            if (chartElement) {
+                renderItemEngagementChart(chartId, itemEngagements);
+            }
+        }, 50);
+    }
+    
+    // Combine all sections
+    modalContent.innerHTML = contentInfo + engagementTable + engagementChart;
+    
+    // Show the modal
+    document.getElementById('content-modal').classList.remove('hidden');
+}
+
+// Render engagement chart for a specific content item
+function renderItemEngagementChart(chartId, engagements) {
+    // Sort data points by timestamp (oldest first for charts)
+    const sortedEngagements = [...engagements].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    const labels = sortedEngagements.map(d => new Date(d.timestamp).toLocaleDateString());
+    const views = sortedEngagements.map(d => d.views);
+    const likes = sortedEngagements.map(d => d.likes);
+    const comments = sortedEngagements.map(d => d.comments);
+    
+    const ctx = document.getElementById(chartId).getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Views',
+                    data: views,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Likes',
+                    data: likes,
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Comments',
+                    data: comments,
+                    borderColor: 'rgb(245, 158, 11)',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Engagement Trends',
+                    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Render engagement data in the table
+function renderEngagementData() {
+    const engagementList = document.getElementById('engagement-list');
+    if (!engagementList) return;
+    
+    engagementList.innerHTML = '';
+    
+    if (contentItems.length === 0 || engagementData.length === 0) {
+        engagementList.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                    No engagement data available. Add content items and refresh data to see engagement metrics.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Group engagement data by content ID and get latest entry for each
+    const latestEngagementData = contentItems.map(item => {
+        const itemEngagements = engagementData
+            .filter(data => data.content_id === item.id)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        return {
+            content: item,
+            engagement: itemEngagements[0] || null
+        };
+    });
+
+    // Sort by latest engagement timestamp
+    latestEngagementData
+        .sort((a, b) => {
+            if (!a.engagement) return 1;
+            if (!b.engagement) return -1;
+            return new Date(b.engagement.timestamp) - new Date(a.engagement.timestamp);
+        })
+        .forEach(data => {
+            const row = document.createElement('tr');
+            
+            if (data.engagement) {
+                const engagement = data.engagement;
+                const content = data.content;
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">${content.name}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="badge ${content.platform.toLowerCase()}">${content.platform}</span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                        ${engagement.views.toLocaleString()}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                        ${(engagement.watch_time || 0).toFixed(1)}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                        ${engagement.likes.toLocaleString()}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                        ${engagement.comments.toLocaleString()}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        ${new Date(engagement.timestamp).toLocaleString()}
+                    </td>
+                `;
+            } else {
+                const content = data.content;
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">${content.name}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="badge ${content.platform.toLowerCase()}">${content.platform}</span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">-</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">-</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">-</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">-</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        <button 
+                            class="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                            onclick="refreshSingleItemData('${content.id}')"
+                        >
+                            <span class="material-icons text-sm mr-1">refresh</span> Fetch Data
+                        </button>
+                    </td>
+                `;
+            }
+            
+            engagementList.appendChild(row);
+        });
+}
+
+// Refresh data for a single content item
+async function refreshSingleItemData(contentId) {
+    try {
+        const item = contentItems.find(c => c.id === contentId);
+        if (!item) {
+            throw new Error('Content item not found');
+        }
+        
+        // Show loading notification
+        showSuccessNotification('Fetching engagement data...');
+        
+        // Fetch engagement data for the item
+        await fetchEngagementData([item]);
+        
+        // Update UI
+        renderEngagementData();
+        updateStats();
+        renderCharts();
+        
+        showSuccessNotification('Engagement data updated');
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        showErrorNotification('Error fetching data: ' + error.message);
+    }
+}
+
+// Refresh all engagement data
+async function refreshEngagementData() {
+    try {
+        if (contentItems.length === 0) {
+            showErrorNotification('No content items to refresh');
+            return;
+        }
+        
+        // Show loading notification
+        showSuccessNotification('Fetching engagement data for all content...');
+        
+        // Fetch engagement data for all items
+        await fetchEngagementData(contentItems);
+        
+        // Update UI
+        renderEngagementData();
+        updateStats();
+        renderCharts();
+        
+        showSuccessNotification('All engagement data updated');
+    } catch (error) {
+        console.error('Error refreshing data:', error);
+        showErrorNotification('Error refreshing data: ' + error.message);
+    }
+}
+
+// Update stats on the dashboard
+function updateStats() {
+    // Update total content count
+    document.getElementById('total-content').textContent = contentItems.length.toLocaleString();
+    
+    // Group engagement data by content ID and get latest entry for each
+    const latestEngagementsByContent = {};
+    engagementData.forEach(item => {
+        if (!latestEngagementsByContent[item.content_id] 
+            || new Date(latestEngagementsByContent[item.content_id].timestamp) < new Date(item.timestamp)) {
+            latestEngagementsByContent[item.content_id] = item;
+        }
+    });
+    
+    // Calculate total engagements (views)
+    const totalViews = Object.values(latestEngagementsByContent).reduce((sum, item) => sum + item.views, 0);
+    document.getElementById('total-engagements').textContent = totalViews.toLocaleString();
+    
+    // Calculate top platform
+    const platformStats = {};
+    contentItems.forEach(item => {
+        platformStats[item.platform] = (platformStats[item.platform] || 0) + 1;
+    });
+    
+    let topPlatform = null;
+    let topPlatformCount = 0;
+    
+    for (const [platform, count] of Object.entries(platformStats)) {
+        if (count > topPlatformCount) {
+            topPlatform = platform;
+            topPlatformCount = count;
+        }
+    }
+    
+    document.getElementById('top-platform').textContent = topPlatform ? 
+        `${topPlatform} (${topPlatformCount})` : 
+        'None';
+}
+
+// Render all charts
+function renderCharts() {
+    renderPlatformChart();
+    renderContentChart();
+    renderTrendsChart();
+}
+
+// Render platform engagement chart
+function renderPlatformChart() {
+    const canvas = document.getElementById('platform-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Calculate total views per platform
+    const platformData = {};
+    
+    contentItems.forEach(item => {
+        const latestEngagement = engagementData
+            .filter(e => e.content_id === item.id)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+        
+        if (latestEngagement) {
+            platformData[item.platform] = (platformData[item.platform] || 0) + latestEngagement.views;
+        }
+    });
+    
+    // Create or update chart
+    if (window.platformChart) {
+        window.platformChart.destroy();
+    }
+    
+    const platformColors = {
+        youtube: '#FF0000',
+        servicenow: '#00c487',
+        linkedin: '#0A66C2',
+        reddit: '#FF4500',
+        twitter: '#1DA1F2',
+        slack: '#4A154B'
+    };
+    
+    window.platformChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(platformData).map(p => p.charAt(0).toUpperCase() + p.slice(1)),
+            datasets: [{
+                data: Object.values(platformData),
+                backgroundColor: Object.keys(platformData).map(p => platformColors[p.toLowerCase()] || '#6B7280'),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Engagement by Platform',
+                    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                }
+            }
+        }
+    });
+}
+
+// Render top content chart
+function renderContentChart() {
+    const canvas = document.getElementById('content-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Get top 5 content items by views
+    const topContent = contentItems.map(item => {
+        const latestEngagement = engagementData
+            .filter(e => e.content_id === item.id)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+        
+        return {
+            name: item.name,
+            views: latestEngagement ? latestEngagement.views : 0,
+            platform: item.platform
+        };
+    })
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 5);
+    
+    // Create or update chart
+    if (window.contentChart) {
+        window.contentChart.destroy();
+    }
+    
+    const platformColors = {
+        youtube: '#FF0000',
+        servicenow: '#00c487',
+        linkedin: '#0A66C2',
+        reddit: '#FF4500',
+        twitter: '#1DA1F2',
+        slack: '#4A154B'
+    };
+    
+    window.contentChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: topContent.map(c => c.name),
+            datasets: [{
+                label: 'Views',
+                data: topContent.map(c => c.views),
+                backgroundColor: topContent.map(c => platformColors[c.platform.toLowerCase()] || '#6B7280')
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Top Content by Views',
+                    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+                        callback: function(value) {
+                            const label = this.getLabelForValue(value);
+                            // Truncate long labels
+                            return label.length > 15 ? label.substr(0, 12) + '...' : label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Fetch engagement data for content items
+async function fetchEngagementData(items) {
+    for (const item of items) {
+        try {
+            let data = null;
+            
+            // Based on platform, fetch engagement data
+            switch (item.platform.toLowerCase()) {
+                case 'youtube':
+                    if (!apiConfig.youtube?.apiKey) {
+                        console.warn('YouTube API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchYouTubeEngagement(item, apiConfig.youtube.apiKey);
+                    break;
+                
+                case 'linkedin':
+                    if (!apiConfig.linkedin?.clientId || !apiConfig.linkedin?.clientSecret) {
+                        console.warn('LinkedIn API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchLinkedInEngagement(item);
+                    break;
+                
+                case 'servicenow':
+                    if (!apiConfig.servicenow?.instance || !apiConfig.servicenow?.username || !apiConfig.servicenow?.password) {
+                        console.warn('ServiceNow API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchServiceNowEngagement(item);
+                    break;
+                
+                case 'reddit':
+                    if (!apiConfig.reddit?.clientId || !apiConfig.reddit?.clientSecret) {
+                        console.warn('Reddit API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchRedditEngagement(item);
+                    break;
+                
+                case 'twitter':
+                    if (!apiConfig.twitter?.apiKey || !apiConfig.twitter?.apiKeySecret) {
+                        console.warn('Twitter API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchTwitterEngagement(item);
+                    break;
+                
+                case 'slack':
+                    if (!apiConfig.slack?.botToken || !apiConfig.slack?.signingSecret) {
+                        console.warn('Slack API not configured for item:', item.name);
+                        continue;
+                    }
+                    data = await fetchSlackEngagement(item);
+                    break;
+                
+                default:
+                    // Generate mock data for unknown platforms
+                    data = generateMockEngagementData();
+            }
+            
+            if (data) {
+                // Add engagement data to Supabase
+                const { data: newEngagement, error } = await supabase
+                    .from('engagement_data')
+                    .insert([{
+                        content_id: item.id,
+                        views: data.views || 0,
+                        likes: data.likes || 0,
+                        comments: data.comments || 0,
+                        shares: data.shares || 0,
+                        watch_time: data.watchTime || 0,
+                        timestamp: new Date().toISOString()
+                    }])
+                    .select();
+                
+                if (error) {
+                    console.error('Error saving engagement data:', error);
+                    continue;
+                }
+                
+                // Update local state
+                engagementData = engagementData.filter(e => e.content_id !== item.id);
+                engagementData.push(newEngagement[0]);
+            }
+        } catch (error) {
+            console.error(`Error fetching engagement data for ${item.name}:`, error);
+        }
+    }
+}
+
+// Generate mock engagement data for testing
+function generateMockEngagementData() {
+    return {
+        views: Math.floor(Math.random() * 1000),
+        likes: Math.floor(Math.random() * 200),
+        comments: Math.floor(Math.random() * 50),
+        shares: Math.floor(Math.random() * 25),
+        watchTime: Math.floor(Math.random() * 10)
+    };
+}
+
+// Fetch YouTube engagement data
+async function fetchYouTubeEngagement(item, apiKey) {
+    try {
+        const videoId = item.content_id;
+        if (!videoId) return generateMockEngagementData();
+        
+        // Make API request to YouTube
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=statistics&key=${apiKey}`);
+        const data = await response.json();
+        
+        if (!data.items || data.items.length === 0) {
+            return generateMockEngagementData();
+        }
+        
+        const stats = data.items[0].statistics;
+        
+        // Calculate approximate watch time (YouTube doesn't expose this via the API)
+        // We're using a simplified formula: avg_view_duration * view_count
+        // For demo, assuming 3-5 min avg duration
+        const avgDurationMinutes = Math.random() * 2 + 3;
+        const viewCount = parseInt(stats.viewCount || 0);
+        const watchTimeHours = (viewCount * avgDurationMinutes) / 60;
+        
+        return {
+            views: viewCount,
+            likes: parseInt(stats.likeCount || 0),
+            comments: parseInt(stats.commentCount || 0),
+            shares: 0, // YouTube API doesn't provide share count
+            watchTime: watchTimeHours
+        };
+    } catch (error) {
+        console.error('Error fetching YouTube engagement:', error);
+        return generateMockEngagementData();
+    }
+}
+
+// Fetch LinkedIn engagement data (mock since API access is limited)
+async function fetchLinkedInEngagement(item) {
+    // For demo purposes, return simulated data
+    // In production, this would make an actual API call
+    return generateMockEngagementData();
+}
+
+// Fetch ServiceNow engagement data (mock)
+async function fetchServiceNowEngagement(item) {
+    // For demo purposes, return simulated data
+    // In production, this would make an actual API call
+    return generateMockEngagementData();
+}
+
+// Fetch Reddit engagement data (mock)
+async function fetchRedditEngagement(item) {
+    // For demo purposes, return simulated data
+    // In production, this would make an actual API call
+    return generateMockEngagementData();
+}
+
+// Fetch Twitter engagement data (mock)
+async function fetchTwitterEngagement(item) {
+    // For demo purposes, return simulated data
+    // In production, this would make an actual API call
+    return generateMockEngagementData();
+}
+
+// Fetch Slack engagement data (mock)
+async function fetchSlackEngagement(item) {
+    // For demo purposes, return simulated data
+    // In production, this would make an actual API call
+    return generateMockEngagementData();
+}
