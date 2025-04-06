@@ -195,22 +195,16 @@ async function loginUser(user) {
 
 // Initialize the state of the user dropdown
 function initializeUserDropdown() {
-    const userDropdown = document.getElementById('user-dropdown')
+    const userDropdown = document.getElementById('user-dropdown');
     if (userDropdown) {
-        userDropdown.classList.add('hidden')
-        userDropdown.style.display = 'none'
-        
-        // Make sure the dropdown is properly positioned
-        userDropdown.style.position = 'absolute'
-        userDropdown.style.zIndex = '9999'
-        
-        // Clear any event listeners that might be causing issues
-        const userMenuButton = document.getElementById('user-menu-button')
-        if (userMenuButton) {
-            const newButton = userMenuButton.cloneNode(true)
-            userMenuButton.parentNode.replaceChild(newButton, userMenuButton)
-        }
+        userDropdown.classList.add('hidden');
+        userDropdown.style.display = 'none';
+        userDropdown.style.position = 'absolute';
+        userDropdown.style.zIndex = '9999';
     }
+    
+    // Initialize the dropdown functionality
+    setupUserDropdown();
 }
 
 // Load user data from Supabase
@@ -2523,18 +2517,4 @@ function setupUserDropdown() {
             showUserProfile();
         });
     }
-}
-
-// Initialize the state of the user dropdown
-function initializeUserDropdown() {
-    const userDropdown = document.getElementById('user-dropdown');
-    if (userDropdown) {
-        userDropdown.classList.add('hidden');
-        userDropdown.style.display = 'none';
-        userDropdown.style.position = 'absolute';
-        userDropdown.style.zIndex = '9999';
-    }
-    
-    // Initialize the dropdown functionality
-    setupUserDropdown();
 }
