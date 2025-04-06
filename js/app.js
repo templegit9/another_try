@@ -199,6 +199,17 @@ function initializeUserDropdown() {
     if (userDropdown) {
         userDropdown.classList.add('hidden')
         userDropdown.style.display = 'none'
+        
+        // Make sure the dropdown is properly positioned
+        userDropdown.style.position = 'absolute'
+        userDropdown.style.zIndex = '9999'
+        
+        // Clear any event listeners that might be causing issues
+        const userMenuButton = document.getElementById('user-menu-button')
+        if (userMenuButton) {
+            const newButton = userMenuButton.cloneNode(true)
+            userMenuButton.parentNode.replaceChild(newButton, userMenuButton)
+        }
     }
 }
 
@@ -649,12 +660,15 @@ function setupEventListeners() {
             console.log('User dropdown toggled, current state:', !userDropdown.classList.contains('hidden'));
         }
         
+        // Remove any existing event listeners to prevent duplication
+        userMenuButton.removeEventListener('click', toggleUserDropdown);
+        
         // Add click listener
         userMenuButton.addEventListener('click', toggleUserDropdown);
         
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+            if (e.target !== userMenuButton && !userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
                 userDropdown.classList.add('hidden');
                 userDropdown.style.display = 'none';
             }
