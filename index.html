@@ -88,13 +88,6 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Collapsible sections */
-        .transition-all {
-            transition-property: all;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-            transition-duration: 300ms;
-        }
-        
         /* Rotation for collapse icons */
         .rotate-180 {
             transform: rotate(180deg);
@@ -346,16 +339,9 @@
                     </div>
                 </div>
                 <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4 md:col-span-2">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex items-center cursor-pointer" id="toggle-engagement-trends">
-                            <h3 class="text-lg font-medium dark:text-white">Engagement Trends</h3>
-                            <span class="material-icons text-gray-500 dark:text-gray-400 ml-2 transform transition-transform duration-200">expand_more</span>
-                        </div>
-                    </div>
-                    <div id="engagement-trends-body" class="transition-all duration-300 overflow-hidden">
-                        <div>
-                            <canvas id="trends-chart" height="200"></canvas>
-                        </div>
+                    <h3 class="text-lg font-medium mb-4 dark:text-white">Engagement Trends</h3>
+                    <div>
+                        <canvas id="trends-chart" height="200"></canvas>
                     </div>
                 </div>
             </div>
