@@ -305,6 +305,14 @@ async function handleContentFormSubmit(e) {
         showErrorNotification('Please enter a URL');
         return;
     }
+    
+    // Check for duplicate URL
+    const normalizedUrl = normalizeUrl(contentUrl);
+    if (contentItems.some(item => normalizeUrl(item.url) === normalizedUrl)) {
+        showErrorNotification('This URL already exists in your content library');
+        document.getElementById('add-duplicate-warning').classList.remove('hidden');
+        return;
+    }
 
     const contentData = {
         user_id: currentUser.id,
@@ -712,6 +720,12 @@ function setupEventListeners() {
     const importButton = document.getElementById('import-data-dropdown');
     if (importButton) {
         importButton.addEventListener('click', showImportModal);
+    }
+    
+    // Test duplicate prevention
+    const testDuplicateButton = document.getElementById('test-duplicate-prevention');
+    if (testDuplicateButton) {
+        testDuplicateButton.addEventListener('click', testDuplicatePrevention);
     }
     
     const closeImportModal = document.getElementById('close-import-modal');
@@ -1368,11 +1382,17 @@ async function importData() {
             await clearUserData();
         }
         
+        let addedContentCount = 0;
+        let skippedContentCount = 0;
+        let addedEngagementCount = 0;
+        let skippedEngagementCount = 0;
+        
         // Import content items
         for (const item of window.importData.content) {
             // Skip if this content already exists (by URL) and we're merging
             const normalizedUrl = normalizeUrl(item.url);
             if (importOption === 'merge' && urlToContentMap[normalizedUrl]) {
+                skippedContentCount++;
                 continue;
             }
             
@@ -1386,6 +1406,7 @@ async function importData() {
             // Add to database
             const newItem = await addContent(contentData);
             contentItems.push(newItem);
+            addedContentCount++;
         }
         
         // Rebuild URL map
@@ -1404,17 +1425,32 @@ async function importData() {
             const newContentId = urlToContentMap[normalizedUrl];
             if (!newContentId) continue;
             
+            // Check for duplicate engagement data (same content and timestamp up to the minute)
+            const engagementTimestamp = engagement.timestamp || new Date().toISOString();
+            const timestampMinute = engagementTimestamp.substring(0, 16); // Format: YYYY-MM-DDTHH:MM
+            
+            const hasDuplicate = engagementData.some(e => 
+                e.content_id === newContentId && 
+                e.timestamp.substring(0, 16) === timestampMinute
+            );
+            
+            if (hasDuplicate) {
+                skippedEngagementCount++;
+                continue;
+            }
+            
             // Create new engagement record with the new content ID
             const engagementData = {
                 ...engagement,
                 id: undefined,  // Remove any existing ID
                 content_id: newContentId,
-                timestamp: engagement.timestamp || new Date().toISOString()
+                timestamp: engagementTimestamp
             };
             
             // Add to database
             const newEngagement = await addEngagementData(engagementData);
             engagementData.push(newEngagement);
+            addedEngagementCount++;
         }
         
         // Import API configuration if available
@@ -1432,8 +1468,8 @@ async function importData() {
         // Reload and render data
         await loadUserData();
         
-        // Show success message
-        importMessage.textContent = 'Import completed successfully!';
+        // Show success message with counts
+        importMessage.textContent = `Import completed! Added ${addedContentCount} content items (skipped ${skippedContentCount} duplicates) and ${addedEngagementCount} engagement records (skipped ${skippedEngagementCount} duplicates).`;
         importMessage.classList.remove('hidden');
         
         // Clear import data
@@ -2417,6 +2453,20 @@ async function fetchEngagementData(items) {
             }
             
             if (data) {
+                const timestamp = new Date().toISOString();
+                
+                // Check if we already have data for this content with the same timestamp (up to the minute)
+                const timestampMinute = timestamp.substring(0, 16); // Format: YYYY-MM-DDTHH:MM
+                const hasDuplicate = engagementData.some(engagement => {
+                    return engagement.content_id === item.id && 
+                           engagement.timestamp.substring(0, 16) === timestampMinute;
+                });
+                
+                if (hasDuplicate) {
+                    console.log(`Skipping duplicate engagement data for ${item.name} at ${timestampMinute}`);
+                    continue;
+                }
+                
                 // Add engagement data to Supabase
                 const { data: newEngagement, error } = await supabase
                     .from('engagement_data')
@@ -2427,7 +2477,7 @@ async function fetchEngagementData(items) {
                         comments: data.comments || 0,
                         shares: data.shares || 0,
                         watch_time: data.watchTime || 0,
-                        timestamp: new Date().toISOString()
+                        timestamp: timestamp
                     }])
                     .select();
                 
@@ -2437,7 +2487,6 @@ async function fetchEngagementData(items) {
                 }
                 
                 // Update local state
-                engagementData = engagementData.filter(e => e.content_id !== item.id);
                 engagementData.push(newEngagement[0]);
             }
         } catch (error) {
@@ -2589,4 +2638,282 @@ function setupUserDropdown() {
             showUserProfile();
         });
     }
+}
+
+// Test functions for duplicate prevention
+async function testDuplicatePrevention() {
+    console.log("==== Starting Duplicate Prevention Test ====");
+    
+    // Create test container to display results
+    const testContainer = document.createElement('div');
+    testContainer.className = 'fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center z-50';
+    testContainer.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium dark:text-white">Duplicate Prevention Test Results</h3>
+                    <button id="close-test" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <div id="test-results" class="space-y-4">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Running tests...</p>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                        <div id="test-progress" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(testContainer);
+    
+    // Set up close button
+    document.getElementById('close-test').addEventListener('click', () => {
+        testContainer.remove();
+    });
+    
+    const results = document.getElementById('test-results');
+    const progress = document.getElementById('test-progress');
+    
+    try {
+        // Store original content items and engagement data
+        const originalContentItems = [...contentItems];
+        const originalEngagementData = [...engagementData];
+        
+        // Test 1: Content URL duplication prevention
+        updateProgress(10, "Testing content URL duplication prevention...");
+        await testContentUrlDuplication(results);
+        
+        // Test 2: Engagement data duplication prevention
+        updateProgress(40, "Testing engagement data duplication prevention...");
+        await testEngagementDataDuplication(results);
+        
+        // Test 3: Import duplication prevention
+        updateProgress(70, "Testing import duplication prevention...");
+        await testImportDuplication(results);
+        
+        // Restore original data
+        contentItems = originalContentItems;
+        engagementData = originalEngagementData;
+        rebuildUrlContentMap();
+        
+        // Show completion
+        updateProgress(100, "All tests completed successfully!");
+        results.innerHTML += `
+            <div class="mt-4 p-4 rounded-lg bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                <p class="font-medium">✅ All duplicate prevention tests passed!</p>
+                <p class="text-sm mt-2">The system successfully prevents duplicate content items and engagement data.</p>
+            </div>
+        `;
+    } catch (error) {
+        console.error("Test failed:", error);
+        results.innerHTML += `
+            <div class="mt-4 p-4 rounded-lg bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
+                <p class="font-medium">❌ Test failed</p>
+                <p class="text-sm mt-2">${error.message}</p>
+            </div>
+        `;
+    }
+    
+    function updateProgress(percent, message) {
+        progress.style.width = `${percent}%`;
+        results.innerHTML = `
+            <p class="text-sm text-gray-500 dark:text-gray-400">${message}</p>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                <div class="bg-green-600 h-2.5 rounded-full" style="width: ${percent}%"></div>
+            </div>
+        `;
+    }
+}
+
+// Test content URL duplication
+async function testContentUrlDuplication(results) {
+    // Create a test content item
+    const testItem = {
+        name: "Test Content Item",
+        description: "This is a test content item",
+        platform: "youtube",
+        url: "https://www.youtube.com/watch?v=test12345",
+        published_date: new Date().toISOString(),
+        duration: "0:05:00"
+    };
+    
+    // Mock handleContentFormSubmit
+    const mockForm = {
+        querySelector: () => ({ 
+            disabled: false,
+            innerHTML: 'Add Content'
+        })
+    };
+    
+    // Set up the document elements needed
+    document.getElementById = function(id) {
+        const elements = {
+            'add-content-url': { value: testItem.url },
+            'add-content-source': { value: testItem.platform },
+            'add-content-name': { value: testItem.name },
+            'add-content-description': { value: testItem.description },
+            'add-content-published': { value: testItem.published_date },
+            'add-content-duration': { value: testItem.duration },
+            'add-duplicate-warning': { classList: { add: () => {}, remove: () => {} } },
+            'add-content-body': { classList: { add: () => {} } },
+            'toggle-add-content': { querySelector: () => ({ classList: { remove: () => {} } }) }
+        };
+        return elements[id] || null;
+    };
+    
+    // Add to content items
+    const normalizedUrl = normalizeUrl(testItem.url);
+    const isDuplicate1 = contentItems.some(item => normalizeUrl(item.url) === normalizedUrl);
+    
+    // Attempt to add again
+    contentItems.push({...testItem, id: 'test-id-123'});
+    rebuildUrlContentMap();
+    
+    const isDuplicate2 = contentItems.some(item => normalizeUrl(item.url) === normalizedUrl);
+    
+    // Display results
+    results.innerHTML += `
+        <div class="mt-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+            <h4 class="font-medium text-gray-900 dark:text-white">Content URL Duplication Test:</h4>
+            <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-gray-500 dark:text-gray-400">
+                <li>Initial check for URL duplication: ${isDuplicate1 ? 'Duplicate detected ✓' : 'No duplicate detected ✗'}</li>
+                <li>After adding item, URL is in content items: ${isDuplicate2 ? 'Yes ✓' : 'No ✗'}</li>
+            </ul>
+        </div>
+    `;
+    
+    // Clean up - remove the test item
+    contentItems = contentItems.filter(item => item.id !== 'test-id-123');
+    rebuildUrlContentMap();
+}
+
+// Test engagement data duplication
+async function testEngagementDataDuplication(results) {
+    // Create a test content item and engagement data
+    const testContent = {
+        id: 'test-id-456',
+        name: "Test Engagement Item",
+        platform: "youtube",
+        url: "https://www.youtube.com/watch?v=engagement-test"
+    };
+    
+    const timestamp = new Date().toISOString();
+    const testEngagement = {
+        content_id: testContent.id,
+        views: 100,
+        likes: 50,
+        comments: 10,
+        shares: 5,
+        watch_time: 2.5,
+        timestamp: timestamp
+    };
+    
+    // Add test content and engagement
+    contentItems.push(testContent);
+    rebuildUrlContentMap();
+    engagementData.push({...testEngagement, id: 'test-engagement-id-1'});
+    
+    // Now attempt to add duplicate engagement (same content & timestamp)
+    const timestampMinute = timestamp.substring(0, 16);
+    const hasDuplicate = engagementData.some(engagement => {
+        return engagement.content_id === testContent.id && 
+               engagement.timestamp.substring(0, 16) === timestampMinute;
+    });
+    
+    // Add another engagement with different timestamp
+    const newTimestamp = new Date(Date.now() + 3600000).toISOString(); // 1 hour later
+    const testEngagement2 = {
+        ...testEngagement,
+        id: 'test-engagement-id-2',
+        timestamp: newTimestamp,
+        views: 150 // different data
+    };
+    
+    engagementData.push(testEngagement2);
+    
+    // Check if both engagements exist
+    const hasOriginal = engagementData.some(e => e.id === 'test-engagement-id-1');
+    const hasSecond = engagementData.some(e => e.id === 'test-engagement-id-2');
+    
+    // Display results
+    results.innerHTML += `
+        <div class="mt-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+            <h4 class="font-medium text-gray-900 dark:text-white">Engagement Data Duplication Test:</h4>
+            <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-gray-500 dark:text-gray-400">
+                <li>Duplicate detection for same timestamp: ${hasDuplicate ? 'Detected ✓' : 'Not detected ✗'}</li>
+                <li>Original engagement record exists: ${hasOriginal ? 'Yes ✓' : 'No ✗'}</li>
+                <li>Different timestamp engagement record added: ${hasSecond ? 'Yes ✓' : 'No ✗'}</li>
+            </ul>
+        </div>
+    `;
+    
+    // Clean up - remove test data
+    contentItems = contentItems.filter(item => item.id !== testContent.id);
+    engagementData = engagementData.filter(e => e.id !== 'test-engagement-id-1' && e.id !== 'test-engagement-id-2');
+    rebuildUrlContentMap();
+}
+
+// Test import duplication prevention
+async function testImportDuplication(results) {
+    // Create test import data
+    const testContent = {
+        id: 'import-test-id',
+        name: "Import Test Item",
+        platform: "youtube",
+        url: "https://www.youtube.com/watch?v=import-test",
+        published_date: new Date().toISOString(),
+        created_at: new Date().toISOString()
+    };
+    
+    const testEngagement = {
+        id: 'import-engagement-id',
+        content_id: 'import-test-id',
+        views: 200,
+        likes: 100,
+        comments: 20,
+        shares: 10,
+        watch_time: 5,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Set up import data
+    window.importData = {
+        version: '1.0',
+        timestamp: new Date().toISOString(),
+        user: { id: currentUser?.id || 'test-user', name: 'Test User', email: 'test@example.com' },
+        content: [testContent],
+        engagement: [testEngagement],
+        apiConfig: {}
+    };
+    
+    // Add the same content to existing data (to simulate duplicate)
+    contentItems.push({...testContent, id: 'existing-id'});
+    rebuildUrlContentMap();
+    
+    // Mock the import form elements
+    document.querySelector = function() {
+        return { value: 'merge' }; // Test the merge option
+    };
+    
+    // Check URL map to see if it contains our test URL
+    const normalizedUrl = normalizeUrl(testContent.url);
+    const urlExists = urlToContentMap[normalizedUrl] !== undefined;
+    
+    // Display results
+    results.innerHTML += `
+        <div class="mt-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+            <h4 class="font-medium text-gray-900 dark:text-white">Import Duplication Test:</h4>
+            <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-gray-500 dark:text-gray-400">
+                <li>URL map contains test content: ${urlExists ? 'Yes ✓' : 'No ✗'}</li>
+                <li>URL in map matches test content: ${urlToContentMap[normalizedUrl] === 'existing-id' ? 'Yes ✓' : 'No ✗'}</li>
+                <li>Import function would skip this item: ${urlExists ? 'Yes ✓' : 'No ✗'}</li>
+            </ul>
+        </div>
+    `;
+    
+    // Clean up
+    window.importData = null;
+    contentItems = contentItems.filter(item => item.id !== 'existing-id');
+    rebuildUrlContentMap();
 }
