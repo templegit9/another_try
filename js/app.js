@@ -213,11 +213,13 @@ async function loginUser(user) {
         // Initialize user dropdown state
         initializeUserDropdown()
         
-        // Set up collapsible sections after main content is displayed
-        setupCollapsibleSections()
-        
         // Load user data
         await loadUserData()
+        
+        // Set up collapsible sections after main content is displayed and data is loaded
+        setTimeout(() => {
+            setupCollapsibleSections()
+        }, 0)
     } catch (error) {
         console.error('Error loading user data:', error)
         // If we can't load the user data, sign them out
