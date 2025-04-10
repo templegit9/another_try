@@ -699,6 +699,14 @@ function setupEventListeners() {
         });
     }
     
+    // Content details modal close button
+    const closeContentModal = document.getElementById('close-modal');
+    if (closeContentModal) {
+        closeContentModal.addEventListener('click', () => {
+            document.getElementById('content-modal').classList.add('hidden');
+        });
+    }
+    
     // Save profile button
     const saveProfileButton = document.getElementById('save-profile');
     if (saveProfileButton) {
@@ -1979,6 +1987,14 @@ function showContentDetails(contentId) {
     
     // Show the modal
     document.getElementById('content-modal').classList.remove('hidden');
+    
+    // Set up close button
+    const closeButton = document.getElementById('close-modal');
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            document.getElementById('content-modal').classList.add('hidden');
+        });
+    }
 }
 
 // Render engagement chart for a specific content item
