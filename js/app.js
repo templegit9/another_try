@@ -914,73 +914,29 @@ function updateApiConfigUI() {
 
 // Set up collapsible sections
 function setupCollapsibleSections() {
-    // Add content section
-    const addContentToggle = document.getElementById('toggle-add-content')
-    const addContentBody = document.getElementById('add-content-body')
-    if (!addContentToggle || !addContentBody) return;
-    
-    const addContentIcon = addContentToggle.querySelector('.material-icons')
-    if (!addContentIcon) return;
-    
-    // Set initial state
-    addContentBody.classList.remove('hidden')
-    addContentIcon.classList.add('rotate-180')
-    
-    addContentToggle.addEventListener('click', () => {
-        addContentBody.classList.toggle('hidden')
-        addContentIcon.classList.toggle('rotate-180')
-    })
-    
-    // Content library section
-    const contentLibraryToggle = document.getElementById('toggle-content-library')
-    const contentLibraryBody = document.getElementById('content-library-body')
-    if (!contentLibraryToggle || !contentLibraryBody) return;
-    
-    const contentLibraryIcon = contentLibraryToggle.querySelector('.material-icons')
-    if (!contentLibraryIcon) return;
-    
-    // Set initial state
-    contentLibraryBody.classList.remove('hidden')
-    contentLibraryIcon.classList.add('rotate-180')
-    
-    contentLibraryToggle.addEventListener('click', () => {
-        contentLibraryBody.classList.toggle('hidden')
-        contentLibraryIcon.classList.toggle('rotate-180')
-    })
-    
-    // Engagement data section
-    const engagementDataToggle = document.getElementById('toggle-engagement-data')
-    const engagementDataBody = document.getElementById('engagement-data-body')
-    if (!engagementDataToggle || !engagementDataBody) return;
-    
-    const engagementDataIcon = engagementDataToggle.querySelector('.material-icons')
-    if (!engagementDataIcon) return;
-    
-    // Set initial state
-    engagementDataBody.classList.remove('hidden')
-    engagementDataIcon.classList.add('rotate-180')
-    
-    engagementDataToggle.addEventListener('click', () => {
-        engagementDataBody.classList.toggle('hidden')
-        engagementDataIcon.classList.toggle('rotate-180')
-    })
-    
-    // Engagement trends section
-    const engagementTrendsToggle = document.getElementById('toggle-engagement-trends')
-    const engagementTrendsBody = document.getElementById('engagement-trends-body')
-    if (!engagementTrendsToggle || !engagementTrendsBody) return;
-    
-    const engagementTrendsIcon = engagementTrendsToggle.querySelector('.material-icons')
-    if (!engagementTrendsIcon) return;
-    
-    // Set initial state
-    engagementTrendsBody.classList.remove('hidden')
-    engagementTrendsIcon.classList.add('rotate-180')
-    
-    engagementTrendsToggle.addEventListener('click', () => {
-        engagementTrendsBody.classList.toggle('hidden')
-        engagementTrendsIcon.classList.toggle('rotate-180')
-    })
+    const sections = [
+        { toggleId: 'toggle-add-content', bodyId: 'add-content-body' },
+        { toggleId: 'toggle-content-library', bodyId: 'content-library-body' },
+        { toggleId: 'toggle-engagement-data', bodyId: 'engagement-data-body' },
+        { toggleId: 'toggle-engagement-trends', bodyId: 'engagement-trends-body' }
+    ];
+
+    sections.forEach(section => {
+        const toggle = document.getElementById(section.toggleId);
+        const body = document.getElementById(section.bodyId);
+        
+        if (toggle && body) {
+            // Set initial state
+            body.style.maxHeight = '0';
+            toggle.querySelector('.material-icons').style.transform = 'rotate(-90deg)';
+            
+            toggle.addEventListener('click', () => {
+                const isExpanded = body.style.maxHeight !== '0px';
+                body.style.maxHeight = isExpanded ? '0' : body.scrollHeight + 'px';
+                toggle.querySelector('.material-icons').style.transform = isExpanded ? 'rotate(-90deg)' : 'rotate(0deg)';
+            });
+        }
+    });
 }
 
 // Initialize the app when the page loads
