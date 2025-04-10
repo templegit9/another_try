@@ -919,70 +919,70 @@ function setupCollapsibleSections() {
     // Add content section
     const addContentToggle = document.getElementById('toggle-add-content')
     const addContentBody = document.getElementById('add-content-body')
-    if (!addContentToggle || !addContentBody) return;
-    
-    const addContentIcon = addContentToggle.querySelector('.material-icons')
-    if (!addContentIcon) return;
-    
-    // Set initial state
-    addContentBody.classList.remove('hidden')
-    addContentIcon.classList.add('rotate-180')
-    
-    addContentToggle.addEventListener('click', () => {
-        addContentBody.classList.toggle('hidden')
-        addContentIcon.classList.toggle('rotate-180')
-    })
+    if (addContentToggle && addContentBody) {
+        const addContentIcon = addContentToggle.querySelector('.material-icons')
+        if (addContentIcon) {
+            // Set initial state
+            addContentBody.classList.remove('hidden')
+            addContentIcon.classList.add('rotate-180')
+            
+            addContentToggle.addEventListener('click', () => {
+                addContentBody.classList.toggle('hidden')
+                addContentIcon.classList.toggle('rotate-180')
+            })
+        }
+    }
     
     // Content library section
     const contentLibraryToggle = document.getElementById('toggle-content-library')
     const contentLibraryBody = document.getElementById('content-library-body')
-    if (!contentLibraryToggle || !contentLibraryBody) return;
-    
-    const contentLibraryIcon = contentLibraryToggle.querySelector('.material-icons')
-    if (!contentLibraryIcon) return;
-    
-    // Set initial state
-    contentLibraryBody.classList.remove('hidden')
-    contentLibraryIcon.classList.add('rotate-180')
-    
-    contentLibraryToggle.addEventListener('click', () => {
-        contentLibraryBody.classList.toggle('hidden')
-        contentLibraryIcon.classList.toggle('rotate-180')
-    })
+    if (contentLibraryToggle && contentLibraryBody) {
+        const contentLibraryIcon = contentLibraryToggle.querySelector('.material-icons')
+        if (contentLibraryIcon) {
+            // Set initial state
+            contentLibraryBody.classList.remove('hidden')
+            contentLibraryIcon.classList.add('rotate-180')
+            
+            contentLibraryToggle.addEventListener('click', () => {
+                contentLibraryBody.classList.toggle('hidden')
+                contentLibraryIcon.classList.toggle('rotate-180')
+            })
+        }
+    }
     
     // Engagement data section
     const engagementDataToggle = document.getElementById('toggle-engagement-data')
     const engagementDataBody = document.getElementById('engagement-data-body')
-    if (!engagementDataToggle || !engagementDataBody) return;
+    if (engagementDataToggle && engagementDataBody) {
+        const engagementDataIcon = engagementDataToggle.querySelector('.material-icons')
+        if (engagementDataIcon) {
+            // Set initial state
+            engagementDataBody.classList.remove('hidden')
+            engagementDataIcon.classList.add('rotate-180')
+            
+            engagementDataToggle.addEventListener('click', () => {
+                engagementDataBody.classList.toggle('hidden')
+                engagementDataIcon.classList.toggle('rotate-180')
+            })
+        }
+    }
     
-    const engagementDataIcon = engagementDataToggle.querySelector('.material-icons')
-    if (!engagementDataIcon) return;
-    
-    // Set initial state
-    engagementDataBody.classList.remove('hidden')
-    engagementDataIcon.classList.add('rotate-180')
-    
-    engagementDataToggle.addEventListener('click', () => {
-        engagementDataBody.classList.toggle('hidden')
-        engagementDataIcon.classList.toggle('rotate-180')
-    })
-    
-    // Engagement trends section
+    // Check if engagement trends elements exist before trying to set them up
     const engagementTrendsToggle = document.getElementById('toggle-engagement-trends')
     const engagementTrendsBody = document.getElementById('engagement-trends-body')
-    if (!engagementTrendsToggle || !engagementTrendsBody) return;
-    
-    const engagementTrendsIcon = engagementTrendsToggle.querySelector('.material-icons')
-    if (!engagementTrendsIcon) return;
-    
-    // Set initial state
-    engagementTrendsBody.classList.remove('hidden')
-    engagementTrendsIcon.classList.add('rotate-180')
-    
-    engagementTrendsToggle.addEventListener('click', () => {
-        engagementTrendsBody.classList.toggle('hidden')
-        engagementTrendsIcon.classList.toggle('rotate-180')
-    })
+    if (engagementTrendsToggle && engagementTrendsBody) {
+        const engagementTrendsIcon = engagementTrendsToggle.querySelector('.material-icons')
+        if (engagementTrendsIcon) {
+            // Set initial state
+            engagementTrendsBody.classList.remove('hidden')
+            engagementTrendsIcon.classList.add('rotate-180')
+            
+            engagementTrendsToggle.addEventListener('click', () => {
+                engagementTrendsBody.classList.toggle('hidden')
+                engagementTrendsIcon.classList.toggle('rotate-180')
+            })
+        }
+    }
 }
 
 // Initialize the app when the page loads
