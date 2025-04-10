@@ -755,6 +755,16 @@ function setupEventListeners() {
         });
     }
     
+    // Dark mode toggle in settings
+    const settingsDarkModeToggle = document.getElementById('dark-mode-toggle')
+    if (settingsDarkModeToggle) {
+        settingsDarkModeToggle.addEventListener('change', toggleDarkMode)
+        
+        // Set initial state based on saved preference
+        const savedDarkMode = localStorage.getItem('darkMode') === 'true'
+        settingsDarkModeToggle.checked = savedDarkMode
+    }
+    
     // Rest of the existing event listeners...
 }
 
