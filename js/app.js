@@ -400,6 +400,11 @@ async function handleContentDeletion(id) {
     }
 }
 
+// Make these functions globally accessible for inline event handlers
+window.handleContentDeletion = handleContentDeletion;
+window.showContentDetails = showContentDetails;
+window.refreshSingleItemData = refreshSingleItemData;
+
 // Save API configuration
 async function handleApiConfigSave() {
     const config = {
@@ -1848,13 +1853,13 @@ function renderContentItems() {
                     <div class="flex space-x-2 justify-end">
                         <button 
                             class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300" 
-                            onclick="showContentDetails('${item.id}')"
+                            onclick="window.showContentDetails('${item.id}')"
                         >
                             <span class="material-icons text-lg">visibility</span>
                         </button>
                         <button 
                             class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300" 
-                            onclick="handleContentDeletion('${item.id}')"
+                            onclick="window.handleContentDeletion('${item.id}')"
                         >
                             <span class="material-icons text-lg">delete</span>
                         </button>
@@ -1986,13 +1991,18 @@ function showContentDetails(contentId) {
     modalContent.innerHTML = contentInfo + engagementTable + engagementChart;
     
     // Show the modal
-    document.getElementById('content-modal').classList.remove('hidden');
+    const contentModal = document.getElementById('content-modal');
+    contentModal.classList.remove('hidden');
     
     // Set up close button
     const closeButton = document.getElementById('close-modal');
     if (closeButton) {
-        closeButton.addEventListener('click', () => {
-            document.getElementById('content-modal').classList.add('hidden');
+        // Remove any existing event listeners by cloning
+        const newCloseButton = closeButton.cloneNode(true);
+        closeButton.parentNode.replaceChild(newCloseButton, closeButton);
+        
+        newCloseButton.addEventListener('click', () => {
+            contentModal.classList.add('hidden');
         });
     }
 }
@@ -2152,7 +2162,7 @@ function renderEngagementData() {
                     <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                         <button 
                             class="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
-                            onclick="refreshSingleItemData('${content.id}')"
+                            onclick="window.refreshSingleItemData('${content.id}')"
                         >
                             <span class="material-icons text-sm mr-1">refresh</span> Fetch Data
                         </button>
