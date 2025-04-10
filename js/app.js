@@ -930,17 +930,30 @@ function setupCollapsibleSections() {
             body.style.maxHeight = '0';
             body.style.overflow = 'hidden';
             body.style.transition = 'max-height 0.3s ease-out';
-            toggle.querySelector('.material-icons').style.transform = 'rotate(-90deg)';
-            toggle.querySelector('.material-icons').style.transition = 'transform 0.3s ease-out';
             
+            // Get the icon element
+            const icon = toggle.querySelector('.material-icons');
+            if (icon) {
+                icon.style.transform = 'rotate(-90deg)';
+                icon.style.transition = 'transform 0.3s ease-out';
+            }
+            
+            // Add click event listener
             toggle.addEventListener('click', () => {
                 const isExpanded = body.style.maxHeight !== '0px';
+                
                 if (isExpanded) {
+                    // Collapse
                     body.style.maxHeight = '0';
-                    toggle.querySelector('.material-icons').style.transform = 'rotate(-90deg)';
+                    if (icon) {
+                        icon.style.transform = 'rotate(-90deg)';
+                    }
                 } else {
+                    // Expand
                     body.style.maxHeight = body.scrollHeight + 'px';
-                    toggle.querySelector('.material-icons').style.transform = 'rotate(0deg)';
+                    if (icon) {
+                        icon.style.transform = 'rotate(0deg)';
+                    }
                 }
             });
         }
