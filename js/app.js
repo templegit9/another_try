@@ -928,12 +928,20 @@ function setupCollapsibleSections() {
         if (toggle && body) {
             // Set initial state
             body.style.maxHeight = '0';
+            body.style.overflow = 'hidden';
+            body.style.transition = 'max-height 0.3s ease-out';
             toggle.querySelector('.material-icons').style.transform = 'rotate(-90deg)';
+            toggle.querySelector('.material-icons').style.transition = 'transform 0.3s ease-out';
             
             toggle.addEventListener('click', () => {
                 const isExpanded = body.style.maxHeight !== '0px';
-                body.style.maxHeight = isExpanded ? '0' : body.scrollHeight + 'px';
-                toggle.querySelector('.material-icons').style.transform = isExpanded ? 'rotate(-90deg)' : 'rotate(0deg)';
+                if (isExpanded) {
+                    body.style.maxHeight = '0';
+                    toggle.querySelector('.material-icons').style.transform = 'rotate(-90deg)';
+                } else {
+                    body.style.maxHeight = body.scrollHeight + 'px';
+                    toggle.querySelector('.material-icons').style.transform = 'rotate(0deg)';
+                }
             });
         }
     });
