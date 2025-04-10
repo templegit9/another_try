@@ -27,8 +27,40 @@ let apiConfig = {
     slack: { botToken: null, signingSecret: null }
 };
 
+// Initialize dark mode state
+function initializeDarkMode() {
+    // Get saved preference or system preference
+    const savedDarkMode = localStorage.getItem('darkMode')
+    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+    
+    // Determine initial state
+    const shouldBeDark = savedDarkMode === 'true' || 
+        (savedDarkMode === null && prefersDarkMode)
+    
+    // Apply initial state
+    if (shouldBeDark) {
+        document.documentElement.classList.add('dark')
+    }
+    
+    // Set up system preference change listener
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (localStorage.getItem('darkMode') === null) {
+            if (e.matches) {
+                document.documentElement.classList.add('dark')
+            } else {
+                document.documentElement.classList.remove('dark')
+            }
+        }
+    })
+    
+    return shouldBeDark
+}
+
 // Initialize the app
 async function initApp() {
+    // Initialize dark mode first
+    const isDarkMode = initializeDarkMode()
+    
     // Check for existing session
     const { data: { session }, error } = await supabase.auth.getSession()
     
@@ -590,15 +622,7 @@ function showAuthScreen() {
     const authDarkModeToggle = document.getElementById('auth-dark-toggle')
     if (authDarkModeToggle) {
         authDarkModeToggle.addEventListener('change', toggleDarkMode)
-        
-        // Set initial state based on system preference or saved preference
-        const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
-        const savedDarkMode = localStorage.getItem('darkMode') === 'true'
-        
-        if (savedDarkMode || (localStorage.getItem('darkMode') === null && prefersDarkMode)) {
-            document.documentElement.classList.add('dark')
-            authDarkModeToggle.checked = true
-        }
+        authDarkModeToggle.checked = document.documentElement.classList.contains('dark')
     }
 }
 
@@ -632,6 +656,13 @@ function toggleDarkMode(e) {
 // Set up main application event listeners
 function setupEventListeners() {
     // User dropdown is now handled by setupUserDropdown()
+    
+    // Dark mode toggle in settings
+    const settingsDarkModeToggle = document.getElementById('dark-mode-toggle')
+    if (settingsDarkModeToggle) {
+        settingsDarkModeToggle.addEventListener('change', toggleDarkMode)
+        settingsDarkModeToggle.checked = document.documentElement.classList.contains('dark')
+    }
     
     // Logout button
     const logoutButton = document.getElementById('logout-button');
@@ -754,18 +785,6 @@ function setupEventListeners() {
             apiSettingsSection.classList.add('hidden');
         });
     }
-    
-    // Dark mode toggle in settings
-    const settingsDarkModeToggle = document.getElementById('dark-mode-toggle')
-    if (settingsDarkModeToggle) {
-        settingsDarkModeToggle.addEventListener('change', toggleDarkMode)
-        
-        // Set initial state based on saved preference
-        const savedDarkMode = localStorage.getItem('darkMode') === 'true'
-        settingsDarkModeToggle.checked = savedDarkMode
-    }
-    
-    // Rest of the existing event listeners...
 }
 
 // Show user profile
