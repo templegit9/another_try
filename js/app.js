@@ -927,7 +927,7 @@ function setupCollapsibleSections() {
         
         if (toggle && body) {
             // Set initial state
-            body.style.maxHeight = '0';
+            body.style.maxHeight = '0px'; // Use '0px' instead of '0'
             body.style.overflow = 'hidden';
             body.style.transition = 'max-height 0.3s ease-out';
             
@@ -944,7 +944,7 @@ function setupCollapsibleSections() {
                 
                 if (isExpanded) {
                     // Collapse
-                    body.style.maxHeight = '0';
+                    body.style.maxHeight = '0px'; // Use '0px' instead of '0'
                     if (icon) {
                         icon.style.transform = 'rotate(-90deg)';
                     }
