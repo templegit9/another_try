@@ -1785,7 +1785,6 @@ function renderContentItems() {
             row.innerHTML = `
                 <td class="px-6 py-4">
                     <div class="text-sm font-medium text-gray-900 dark:text-white">${item.name}</div>
-                    ${item.description ? `<div class="text-sm text-gray-500 dark:text-gray-400">${item.description}</div>` : ''}
                 </td>
                 <td class="px-6 py-4">
                     <span class="badge ${platformClass}">${item.platform}</span>
