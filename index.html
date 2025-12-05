@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,7 +39,7 @@
             margin: 0;
             padding: 0;
         }
-        
+
         /* Custom badge styling */
         .badge {
             padding: 0.25rem 0.5rem;
@@ -46,22 +47,27 @@
             font-size: 0.75rem;
             font-weight: 500;
         }
+
         .badge.youtube {
             background-color: #FFEEEE;
             color: #FF0000;
         }
+
         .badge.servicenow {
             background-color: #E6F7F1;
             color: #00c487;
         }
+
         .badge.linkedin {
             background-color: #E6F0FA;
             color: #0A66C2;
         }
+
         .badge.other {
             background-color: #F3F4F6;
             color: #6B7280;
         }
+
         /* Button styling */
         .btn {
             display: inline-flex;
@@ -72,41 +78,52 @@
             font-weight: 500;
             cursor: pointer;
         }
+
         .btn-primary {
             background-color: #00c487;
             color: white;
         }
+
         .btn-primary:hover {
             background-color: #00A070;
         }
+
         /* Animation */
         .animate-spin {
             animation: spin 1s linear infinite;
         }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
-        
+
         /* Rotation for collapse icons */
         .rotate-180 {
             transform: rotate(180deg);
         }
-        
+
         /* Toggle Switch */
         .toggle-checkbox:checked {
             transform: translateX(100%);
             border-color: #00c487;
         }
+
         .toggle-label {
             transition: background-color 0.2s ease;
         }
-        .toggle-checkbox:checked + .toggle-label {
+
+        .toggle-checkbox:checked+.toggle-label {
             background-color: #00c487;
         }
-        
+
         /* Form elements styling */
-        input[type="text"], 
+        input[type="text"],
         input[type="url"],
         input[type="date"],
         input[type="password"],
@@ -118,112 +135,73 @@
             border-radius: 0.375rem;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
-        
-        input:focus, select:focus {
+
+        input:focus,
+        select:focus {
             outline: 2px solid #00c487;
             border-color: #00c487;
         }
-        
+
         /* Hide main content initially until authentication is checked */
         #main-content {
             display: none;
         }
-        
+
         /* Show auth content initially */
         #auth-content {
             display: block;
         }
     </style>
 </head>
+
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-200">
     <!-- Authentication content (shown before login) -->
     <div id="auth-content" class="min-h-screen flex flex-col justify-center">
         <div class="max-w-md mx-auto p-6">
             <div class="mb-8 text-center">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Platform Engagement Tracker</h1>
-                <p class="text-gray-600 dark:text-gray-400">Track and manage your content performance across platforms</p>
+                <p class="text-gray-600 dark:text-gray-400">Track and manage your content performance across platforms
+                </p>
             </div>
-            
+
             <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-                <!-- Login/Register tabs -->
-                <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-                    <button id="login-tab" class="px-4 py-2 border-b-2 border-green-500 text-green-600 dark:text-green-400 font-medium">Login</button>
-                    <button id="register-tab" class="px-4 py-2 text-gray-500 dark:text-gray-400 font-medium">Register</button>
+                <div class="mb-6 text-center">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Session Access</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter a Session ID to access or create your
+                        workspace</p>
                 </div>
-                
-                <!-- Login form -->
+
+                <!-- Session ID form -->
                 <form id="login-form" class="space-y-4">
                     <div>
-                        <label for="login-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                        <input type="email" id="login-email" name="login-email" required
+                        <label for="session-id"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Session ID</label>
+                        <input type="text" id="session-id" name="session-id" required placeholder="e.g. my-workspace"
                             class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Use any ID. If it exists, you'll log
+                            in. If not, it will be created.</p>
                     </div>
-                    <div>
-                        <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-                        <input type="password" id="login-password" name="login-password" required
-                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        <div class="mt-1 text-right">
-                            <button type="button" id="forgot-password-link" class="text-sm text-green-600 dark:text-green-400 hover:underline">
-                                Forgot password?
-                            </button>
-                        </div>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-green-600 border-gray-300 rounded">
-                        <label for="remember-me" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">Remember me</label>
-                    </div>
+
                     <div>
                         <button type="submit" class="w-full btn btn-primary">
-                            <span class="material-icons mr-1">login</span> Sign in
+                            <span class="material-icons mr-1">login</span> Access Workspace
                         </button>
                     </div>
                     <div id="login-error" class="text-red-500 text-sm hidden"></div>
                 </form>
-                
-                <!-- Register form (hidden initially) -->
-                <form id="register-form" class="space-y-4 hidden">
-                    <div>
-                        <label for="register-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
-                        <input type="text" id="register-name" name="register-name" required
-                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                    </div>
-                    <div>
-                        <label for="register-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                        <input type="email" id="register-email" name="register-email" required
-                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                    </div>
-                    <div>
-                        <label for="register-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-                        <input type="password" id="register-password" name="register-password" required
-                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                    </div>
-                    <div>
-                        <label for="register-confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
-                        <input type="password" id="register-confirm-password" name="register-confirm-password" required
-                            class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                    </div>
-                    <div>
-                        <button type="submit" class="w-full btn btn-primary">
-                            <span class="material-icons mr-1">person_add</span> Create Account
-                        </button>
-                    </div>
-                    <div id="register-error" class="text-red-500 text-sm hidden"></div>
-                </form>
-                
+
                 <!-- Dark mode toggle in auth screen -->
                 <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between">
                         <span class="text-sm text-gray-700 dark:text-gray-300">Dark Mode</span>
                         <div class="relative inline-block w-12 mr-2 align-middle select-none">
-                            <input type="checkbox" id="auth-dark-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in" />
-                            <label for="auth-dark-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
+                            <input type="checkbox" id="auth-dark-toggle"
+                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in" />
+                            <label for="auth-dark-toggle"
+                                class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-                <p>Demo account: demo@example.com / password</p>
             </div>
         </div>
     </div>
@@ -238,28 +216,37 @@
                     <!-- User profile dropdown -->
                     <div class="relative ml-3">
                         <div>
-                            <button id="user-menu-button" type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            <button id="user-menu-button" type="button"
+                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                                 <span id="current-user-name">User</span>
                                 <span class="material-icons ml-1">arrow_drop_down</span>
                             </button>
                         </div>
-                        <div id="user-dropdown" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                            <a href="#" id="user-profile-link" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <div id="user-dropdown"
+                            class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                            <a href="#" id="user-profile-link"
+                                class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <span class="material-icons mr-1 align-text-bottom text-sm">person</span> Your Profile
                             </a>
-                            <a href="#" id="show-settings-link" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <a href="#" id="show-settings-link"
+                                class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <span class="material-icons mr-1 align-text-bottom text-sm">settings</span> Settings
                             </a>
-                            <button id="export-data-dropdown" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <button id="export-data-dropdown"
+                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <span class="material-icons mr-1 align-text-bottom text-sm">download</span> Export Data
                             </button>
-                            <button id="import-data-dropdown" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <button id="import-data-dropdown"
+                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <span class="material-icons mr-1 align-text-bottom text-sm">upload</span> Import Data
                             </button>
-                            <button id="test-duplicate-prevention" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <span class="material-icons mr-1 align-text-bottom text-sm">bug_report</span> Test Duplicates
+                            <button id="test-duplicate-prevention"
+                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <span class="material-icons mr-1 align-text-bottom text-sm">bug_report</span> Test
+                                Duplicates
                             </button>
-                            <button id="logout-button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <button id="logout-button"
+                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <span class="material-icons mr-1 align-text-bottom text-sm">logout</span> Sign out
                             </button>
                         </div>
@@ -280,9 +267,11 @@
                             </div>
                             <div class="ml-5 w-0 flex-1">
                                 <dl>
-                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Content</dt>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total
+                                        Content</dt>
                                     <dd class="flex items-baseline">
-                                        <div class="text-2xl font-semibold text-gray-900 dark:text-white" id="total-content">0</div>
+                                        <div class="text-2xl font-semibold text-gray-900 dark:text-white"
+                                            id="total-content">0</div>
                                     </dd>
                                 </dl>
                             </div>
@@ -298,9 +287,11 @@
                             </div>
                             <div class="ml-5 w-0 flex-1">
                                 <dl>
-                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Engagements</dt>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total
+                                        Engagements</dt>
                                     <dd class="flex items-baseline">
-                                        <div class="text-2xl font-semibold text-gray-900 dark:text-white" id="total-engagements">0</div>
+                                        <div class="text-2xl font-semibold text-gray-900 dark:text-white"
+                                            id="total-engagements">0</div>
                                     </dd>
                                 </dl>
                             </div>
@@ -316,9 +307,11 @@
                             </div>
                             <div class="ml-5 w-0 flex-1">
                                 <dl>
-                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Top Platform</dt>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Top
+                                        Platform</dt>
                                     <dd class="flex items-baseline">
-                                        <div class="text-2xl font-semibold text-gray-900 dark:text-white" id="top-platform">-</div>
+                                        <div class="text-2xl font-semibold text-gray-900 dark:text-white"
+                                            id="top-platform">-</div>
                                     </dd>
                                 </dl>
                             </div>
@@ -354,18 +347,25 @@
                 <div class="px-4 py-5 sm:p-6">
                     <div class="flex justify-between items-center mb-4 cursor-pointer" id="toggle-add-content">
                         <h3 class="text-lg font-medium dark:text-white">Add New Content</h3>
-                        <span class="material-icons text-gray-500 dark:text-gray-400 transform transition-transform duration-200">expand_more</span>
+                        <span
+                            class="material-icons text-gray-500 dark:text-gray-400 transform transition-transform duration-200">expand_more</span>
                     </div>
                     <div id="add-content-body" class="transition-all duration-300 overflow-hidden">
                         <form id="add-content-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="md:col-span-2">
-                                <label for="add-content-url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL <span class="text-red-500 dark:text-red-400">*</span></label>
+                                <label for="add-content-url"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL <span
+                                        class="text-red-500 dark:text-red-400">*</span></label>
                                 <input type="url" id="add-content-url" name="content-url" required
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                                <p id="add-duplicate-warning" class="text-red-500 dark:text-red-400 text-xs mt-1 hidden">Warning: URL already exists</p>
+                                <p id="add-duplicate-warning"
+                                    class="text-red-500 dark:text-red-400 text-xs mt-1 hidden">Warning: URL already
+                                    exists</p>
                             </div>
                             <div>
-                                <label for="add-content-source" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Platform <span class="text-red-500 dark:text-red-400">*</span></label>
+                                <label for="add-content-source"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Platform
+                                    <span class="text-red-500 dark:text-red-400">*</span></label>
                                 <select id="add-content-source" name="content-source" required
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
                                     <option value="youtube">YouTube</option>
@@ -377,29 +377,39 @@
                                 </select>
                             </div>
                             <div>
-                                <label for="add-fetch-content-info" class="block text-sm font-medium text-transparent mb-1">Get Info</label>
-                                <button type="button" id="add-fetch-content-info" 
+                                <label for="add-fetch-content-info"
+                                    class="block text-sm font-medium text-transparent mb-1">Get Info</label>
+                                <button type="button" id="add-fetch-content-info"
                                     class="btn bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-blue-200 w-full">
                                     <span class="material-icons mr-1">cloud_download</span> Get Info
                                 </button>
                             </div>
                             <div class="md:col-span-2">
-                                <label for="add-content-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected, can edit)</span></label>
+                                <label for="add-content-name"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title <span
+                                        class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected, can
+                                        edit)</span></label>
                                 <input type="text" id="add-content-name" name="content-name" required
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
                                     placeholder="Will be extracted from URL">
                             </div>
                             <div class="md:col-span-2">
-                                <label for="add-content-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description <span class="text-gray-400 dark:text-gray-500 text-xs">(optional)</span></label>
+                                <label for="add-content-description"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description
+                                    <span class="text-gray-400 dark:text-gray-500 text-xs">(optional)</span></label>
                                 <input type="text" id="add-content-description" name="content-description"
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
                                     placeholder="Your notes about this content">
                             </div>
                             <div id="add-duration-container" class="hidden">
-                                <label for="add-content-duration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected for videos)</span></label>
+                                <label for="add-content-duration"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration
+                                    <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected for
+                                        videos)</span></label>
                                 <div class="relative">
                                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="material-icons text-gray-400 dark:text-gray-500 text-sm">timer</span>
+                                        <span
+                                            class="material-icons text-gray-400 dark:text-gray-500 text-sm">timer</span>
                                     </span>
                                     <input type="text" id="add-content-duration" name="content-duration"
                                         class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full pl-10 sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
@@ -407,7 +417,10 @@
                                 </div>
                             </div>
                             <div class="md:col-span-2">
-                                <label for="add-content-published" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Published Date <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected when possible)</span></label>
+                                <label for="add-content-published"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Published
+                                    Date <span class="text-gray-400 dark:text-gray-500 text-xs">(auto-detected when
+                                        possible)</span></label>
                                 <input type="date" id="add-content-published" name="content-published" required
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
                             </div>
@@ -429,30 +442,44 @@
                     <div class="flex justify-between items-center mb-4">
                         <div class="flex items-center cursor-pointer" id="toggle-content-library">
                             <h3 class="text-lg font-medium dark:text-white">Content Library</h3>
-                            <span class="material-icons text-gray-500 dark:text-gray-400 ml-2 transform transition-transform duration-200">expand_more</span>
+                            <span
+                                class="material-icons text-gray-500 dark:text-gray-400 ml-2 transform transition-transform duration-200">expand_more</span>
                         </div>
                         <button id="refresh-data" class="btn btn-primary">
                             <span class="material-icons mr-1">refresh</span> Refresh Data
                         </button>
                     </div>
                     <div id="content-library-body" class="transition-all duration-300 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Title</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Platform</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Published</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Added On</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">URL</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="content-list" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                <!-- Content items will be rendered here -->
-                            </tbody>
-                        </table>
-                    </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Title</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Platform</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Published</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Added On</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            URL</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="content-list"
+                                    class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    <!-- Content items will be rendered here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -463,442 +490,543 @@
                     <div class="flex justify-between items-center mb-4">
                         <div class="flex items-center cursor-pointer" id="toggle-engagement-data">
                             <h3 class="text-lg font-medium dark:text-white">Latest Engagement Data</h3>
-                            <span class="material-icons text-gray-500 dark:text-gray-400 ml-2 transform transition-transform duration-200">expand_more</span>
+                            <span
+                                class="material-icons text-gray-500 dark:text-gray-400 ml-2 transform transition-transform duration-200">expand_more</span>
                         </div>
                         <button id="refresh-all-data" class="btn btn-primary">
                             <span class="material-icons mr-1">refresh</span> Refresh All
                         </button>
                     </div>
                     <div id="engagement-data-body" class="transition-all duration-300 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Content</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Platform</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Views</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Hours</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Likes</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Comments</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Last Updated</th>
-                                </tr>
-                            </thead>
-                            <tbody id="engagement-list" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                <!-- Engagement data will be rendered here -->
-                            </tbody>
-                        </table>
-                    </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Content</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Platform</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Views</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Total Hours</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Likes</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Comments</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Last Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="engagement-list"
+                                    class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    <!-- Engagement data will be rendered here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
+        </main>
 
-    <!-- API Settings Modal (hidden by default) -->
-    <div id="api-settings" class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
-            <div class="px-4 py-5 sm:p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-medium dark:text-white">Settings</h3>
-                    <button id="hide-settings" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
-                        <span class="material-icons">close</span>
-                    </button>
-                </div>
-                
-                <!-- App Settings -->
-                <div class="mb-6">
-                    <h4 class="text-md font-medium mb-2 dark:text-white">General Settings</h4>
-                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                        <div class="flex items-center justify-between">
-                            <label for="dark-mode-toggle" class="text-sm font-medium text-gray-700 dark:text-gray-300">Dark Mode</label>
-                            <div class="relative inline-block w-12 mr-2 align-middle select-none">
-                                <input type="checkbox" id="dark-mode-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in" />
-                                <label for="dark-mode-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- YouTube API Settings -->
-                <div class="mb-6">
-                    <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
-                        YouTube API 
-                        <span id="youtube-api-status" class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not Configured</span>
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="youtube-api-key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key</label>
-                            <input type="text" id="youtube-api-key" name="youtube-api-key"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                To get an API key: 
-                                <a href="https://console.developers.google.com/" target="_blank" class="text-blue-500 dark:text-blue-400 hover:underline">Go to Google Cloud Console</a>, 
-                                create a project, enable YouTube Data API v3, and create an API key.
-                            </p>
-                        </div>
-                        <div class="flex items-end">
-                            <button id="test-youtube-api" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
-                                <span class="material-icons mr-1">check_circle</span> Test Connection
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ServiceNow API Settings -->
-                <div class="mb-6">
-                    <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
-                        ServiceNow API 
-                        <span id="servicenow-api-status" class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not Configured</span>
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="servicenow-instance" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instance URL</label>
-                            <input type="text" id="servicenow-instance" name="servicenow-instance"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
-                                placeholder="https://instance.service-now.com">
-                        </div>
-                        <div>
-                            <label for="servicenow-username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
-                            <input type="text" id="servicenow-username" name="servicenow-username"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="servicenow-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-                            <input type="password" id="servicenow-password" name="servicenow-password"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div class="md:col-span-3">
-                            <button id="test-servicenow-api" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
-                                <span class="material-icons mr-1">check_circle</span> Test Connection
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- LinkedIn API Settings -->
-                <div class="mb-6">
-                    <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
-                        LinkedIn API 
-                        <span id="linkedin-api-status" class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not Configured</span>
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="linkedin-client-id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client ID</label>
-                            <input type="text" id="linkedin-client-id" name="linkedin-client-id"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="linkedin-client-secret" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client Secret</label>
-                            <input type="password" id="linkedin-client-secret" name="linkedin-client-secret"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div class="md:col-span-2">
-                            <button id="test-linkedin-api" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
-                                <span class="material-icons mr-1">check_circle</span> Test Configuration
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Reddit API Settings -->
-                <div class="mb-6">
-                    <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
-                        Reddit API 
-                        <span id="reddit-api-status" class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not Configured</span>
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="reddit-client-id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client ID</label>
-                            <input type="text" id="reddit-client-id" name="reddit-client-id"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="reddit-client-secret" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client Secret</label>
-                            <input type="password" id="reddit-client-secret" name="reddit-client-secret"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="reddit-username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
-                            <input type="text" id="reddit-username" name="reddit-username"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div class="md:col-span-3">
-                            <button id="test-reddit-api" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
-                                <span class="material-icons mr-1">check_circle</span> Test Configuration
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Twitter API Settings -->
-                <div class="mb-6">
-                    <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
-                        Twitter API 
-                        <span id="twitter-api-status" class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not Configured</span>
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="twitter-api-key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key</label>
-                            <input type="text" id="twitter-api-key" name="twitter-api-key"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="twitter-api-key-secret" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key Secret</label>
-                            <input type="password" id="twitter-api-key-secret" name="twitter-api-key-secret"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="twitter-bearer-token" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bearer Token</label>
-                            <input type="password" id="twitter-bearer-token" name="twitter-bearer-token"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div class="md:col-span-3">
-                            <button id="test-twitter-api" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
-                                <span class="material-icons mr-1">check_circle</span> Test Configuration
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Slack API Settings -->
-                <div class="mb-6">
-                    <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
-                        Slack API 
-                        <span id="slack-api-status" class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not Configured</span>
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="slack-bot-token" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bot User OAuth Token</label>
-                            <input type="password" id="slack-bot-token" name="slack-bot-token"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="slack-signing-secret" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Signing Secret</label>
-                            <input type="password" id="slack-signing-secret" name="slack-signing-secret"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
-                        <div class="md:col-span-2">
-                            <button id="test-slack-api" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
-                                <span class="material-icons mr-1">check_circle</span> Test Configuration
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Save button -->
-                <div class="mt-6">
-                    <button id="save-api-config" onclick="handleApiConfigSave()" class="btn btn-primary">
-                        <span class="material-icons mr-1">save</span> Save Configuration
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Content Details Modal (hidden by default) -->
-    <div id="content-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
-            <div class="px-4 py-5 sm:p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 id="modal-title" class="text-lg font-medium dark:text-white">Content Details</h3>
-                    <button id="close-modal" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
-                        <span class="material-icons">close</span>
-                    </button>
-                </div>
-                <div id="modal-content">
-                    <!-- Modal content will be rendered here -->
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Import Data Modal (hidden by default) -->
-    <div id="import-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
-            <div class="px-4 py-5 sm:p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-medium dark:text-white">Import Data</h3>
-                    <button id="close-import-modal" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
-                        <span class="material-icons">close</span>
-                    </button>
-                </div>
-                <div class="space-y-6">
-                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                        <p class="text-gray-700 dark:text-gray-300 mb-3">Select a Platform Engagement Tracker export file to import your data. This will merge the imported data with your existing data.</p>
-                        
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-center w-full">
-                                <label for="import-file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800 hover:bg-gray-100 dark:border-gray-600">
-                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                        <span class="material-icons text-gray-500 dark:text-gray-400 text-3xl mb-2">upload_file</span>
-                                        <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">JSON file only</p>
-                                    </div>
-                                    <input id="import-file" type="file" class="hidden" accept=".json" />
-                                </label>
-                            </div>
-                            <div id="file-info" class="hidden text-sm text-gray-500 dark:text-gray-400"></div>
-                            
-                            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-                                <h4 class="font-medium text-gray-900 dark:text-white mb-2">Import Options</h4>
-                                <div class="space-y-2">
-                                    <div class="flex items-center">
-                                        <input id="import-option-merge" type="radio" name="import-option" value="merge" checked class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" />
-                                        <label for="import-option-merge" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                                            Merge with existing data (recommended)
-                                        </label>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <input id="import-option-replace" type="radio" name="import-option" value="replace" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" />
-                                        <label for="import-option-replace" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                                            Replace all existing data
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div id="import-preview" class="hidden">
-                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Preview</h4>
-                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                            <div class="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <span class="text-gray-500 dark:text-gray-400">Content Items:</span>
-                                    <span id="preview-content-count" class="font-medium text-gray-900 dark:text-white ml-1">0</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500 dark:text-gray-400">Engagement Records:</span>
-                                    <span id="preview-engagement-count" class="font-medium text-gray-900 dark:text-white ml-1">0</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500 dark:text-gray-400">Export Date:</span>
-                                    <span id="preview-export-date" class="font-medium text-gray-900 dark:text-white ml-1">-</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500 dark:text-gray-400">User:</span>
-                                    <span id="preview-user" class="font-medium text-gray-900 dark:text-white ml-1">-</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-end">
-                        <button id="import-data-btn" class="btn btn-primary" disabled>
-                            <span class="material-icons mr-1">upload</span> Import Data
+        <!-- API Settings Modal (hidden by default) -->
+        <div id="api-settings"
+            class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium dark:text-white">Settings</h3>
+                        <button id="hide-settings"
+                            class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                            <span class="material-icons">close</span>
                         </button>
                     </div>
-                    <div id="import-message" class="text-green-500 dark:text-green-400 text-sm hidden"></div>
-                    <div id="import-error" class="text-red-500 dark:text-red-400 text-sm hidden"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- User Profile Modal (hidden by default) -->
-    <div id="profile-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
-            <div class="px-4 py-5 sm:p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-medium dark:text-white">Your Profile</h3>
-                    <button id="close-profile-modal" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
-                        <span class="material-icons">close</span>
-                    </button>
-                </div>
-                <div class="space-y-6">
-                    <div class="flex flex-col items-center mb-6">
-                        <div class="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mb-3">
-                            <span class="material-icons text-4xl text-green-500 dark:text-green-300">person</span>
+
+                    <!-- App Settings -->
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium mb-2 dark:text-white">General Settings</h4>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <label for="dark-mode-toggle"
+                                    class="text-sm font-medium text-gray-700 dark:text-gray-300">Dark Mode</label>
+                                <div class="relative inline-block w-12 mr-2 align-middle select-none">
+                                    <input type="checkbox" id="dark-mode-toggle"
+                                        class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in" />
+                                    <label for="dark-mode-toggle"
+                                        class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-600 cursor-pointer"></label>
+                                </div>
+                            </div>
                         </div>
-                        <h2 id="profile-name" class="text-xl font-semibold text-gray-900 dark:text-white">User Name</h2>
-                        <p id="profile-email" class="text-gray-500 dark:text-gray-400">user@example.com</p>
                     </div>
-                    
-                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-4">
-                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Account Information</h4>
-                        <div>
-                            <label for="profile-display-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Name</label>
-                            <input type="text" id="profile-display-name" name="profile-display-name"
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
-                        </div>
+
+                    <!-- YouTube API Settings -->
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
+                            YouTube API
+                            <span id="youtube-api-status"
+                                class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not
+                                Configured</span>
+                        </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="profile-current-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Password</label>
-                                <input type="password" id="profile-current-password" name="profile-current-password"
+                                <label for="youtube-api-key"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API
+                                    Key</label>
+                                <input type="text" id="youtube-api-key" name="youtube-api-key"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    To get an API key:
+                                    <a href="https://console.developers.google.com/" target="_blank"
+                                        class="text-blue-500 dark:text-blue-400 hover:underline">Go to Google Cloud
+                                        Console</a>,
+                                    create a project, enable YouTube Data API v3, and create an API key.
+                                </p>
+                            </div>
+                            <div class="flex items-end">
+                                <button id="test-youtube-api"
+                                    class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
+                                    <span class="material-icons mr-1">check_circle</span> Test Connection
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ServiceNow API Settings -->
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
+                            ServiceNow API
+                            <span id="servicenow-api-status"
+                                class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not
+                                Configured</span>
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="servicenow-instance"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instance
+                                    URL</label>
+                                <input type="text" id="servicenow-instance" name="servicenow-instance"
                                     class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
-                                    placeholder="Enter to change password">
+                                    placeholder="https://instance.service-now.com">
                             </div>
                             <div>
-                                <label for="profile-new-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
-                                <input type="password" id="profile-new-password" name="profile-new-password"
-                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
-                                    placeholder="New password">
+                                <label for="servicenow-username"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                                <input type="text" id="servicenow-username" name="servicenow-username"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div>
+                                <label for="servicenow-password"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                                <input type="password" id="servicenow-password" name="servicenow-password"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div class="md:col-span-3">
+                                <button id="test-servicenow-api"
+                                    class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
+                                    <span class="material-icons mr-1">check_circle</span> Test Connection
+                                </button>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                        <h4 class="font-medium text-gray-900 dark:text-white mb-2">Account Statistics</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                            <div class="p-3">
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Content Items</p>
-                                <p id="profile-content-count" class="text-xl font-semibold text-gray-900 dark:text-white">0</p>
+
+                    <!-- LinkedIn API Settings -->
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
+                            LinkedIn API
+                            <span id="linkedin-api-status"
+                                class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not
+                                Configured</span>
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="linkedin-client-id"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client
+                                    ID</label>
+                                <input type="text" id="linkedin-client-id" name="linkedin-client-id"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
                             </div>
-                            <div class="p-3">
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Total Views</p>
-                                <p id="profile-views-count" class="text-xl font-semibold text-gray-900 dark:text-white">0</p>
+                            <div>
+                                <label for="linkedin-client-secret"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client
+                                    Secret</label>
+                                <input type="password" id="linkedin-client-secret" name="linkedin-client-secret"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
                             </div>
-                            <div class="p-3">
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Member Since</p>
-                                <p id="profile-member-since" class="text-xl font-semibold text-gray-900 dark:text-white">-</p>
+                            <div class="md:col-span-2">
+                                <button id="test-linkedin-api"
+                                    class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
+                                    <span class="material-icons mr-1">check_circle</span> Test Configuration
+                                </button>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="flex justify-end space-x-3">
-                        <button id="save-profile" class="btn btn-primary">
-                            <span class="material-icons mr-1">save</span> Save Changes
-                        </button>
-                        <button id="delete-account" class="btn bg-red-500 hover:bg-red-600 text-white">
-                            <span class="material-icons mr-1">delete</span> Delete Account
+
+                    <!-- Reddit API Settings -->
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
+                            Reddit API
+                            <span id="reddit-api-status"
+                                class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not
+                                Configured</span>
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="reddit-client-id"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client
+                                    ID</label>
+                                <input type="text" id="reddit-client-id" name="reddit-client-id"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div>
+                                <label for="reddit-client-secret"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client
+                                    Secret</label>
+                                <input type="password" id="reddit-client-secret" name="reddit-client-secret"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div>
+                                <label for="reddit-username"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                                <input type="text" id="reddit-username" name="reddit-username"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div class="md:col-span-3">
+                                <button id="test-reddit-api"
+                                    class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
+                                    <span class="material-icons mr-1">check_circle</span> Test Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Twitter API Settings -->
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
+                            Twitter API
+                            <span id="twitter-api-status"
+                                class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not
+                                Configured</span>
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="twitter-api-key"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API
+                                    Key</label>
+                                <input type="text" id="twitter-api-key" name="twitter-api-key"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div>
+                                <label for="twitter-api-key-secret"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key
+                                    Secret</label>
+                                <input type="password" id="twitter-api-key-secret" name="twitter-api-key-secret"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div>
+                                <label for="twitter-bearer-token"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bearer
+                                    Token</label>
+                                <input type="password" id="twitter-bearer-token" name="twitter-bearer-token"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div class="md:col-span-3">
+                                <button id="test-twitter-api"
+                                    class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
+                                    <span class="material-icons mr-1">check_circle</span> Test Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slack API Settings -->
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium mb-2 flex items-center dark:text-white">
+                            Slack API
+                            <span id="slack-api-status"
+                                class="badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 ml-2">Not
+                                Configured</span>
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="slack-bot-token"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bot User
+                                    OAuth Token</label>
+                                <input type="password" id="slack-bot-token" name="slack-bot-token"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div>
+                                <label for="slack-signing-secret"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Signing
+                                    Secret</label>
+                                <input type="password" id="slack-signing-secret" name="slack-signing-secret"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div class="md:col-span-2">
+                                <button id="test-slack-api"
+                                    class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">
+                                    <span class="material-icons mr-1">check_circle</span> Test Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Save button -->
+                    <div class="mt-6">
+                        <button id="save-api-config" onclick="handleApiConfigSave()" class="btn btn-primary">
+                            <span class="material-icons mr-1">save</span> Save Configuration
                         </button>
                     </div>
-                    <div id="profile-message" class="text-green-500 dark:text-green-400 text-sm hidden"></div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Forgot Password Modal (hidden by default) -->
-    <div id="forgot-password-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl">
-            <div class="px-4 py-5 sm:p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-medium dark:text-white">Reset Password</h3>
-                    <button id="close-forgot-password-modal" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
-                        <span class="material-icons">close</span>
-                    </button>
+        <!-- Content Details Modal (hidden by default) -->
+        <div id="content-modal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 id="modal-title" class="text-lg font-medium dark:text-white">Content Details</h3>
+                        <button id="close-modal"
+                            class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                    <div id="modal-content">
+                        <!-- Modal content will be rendered here -->
+                    </div>
                 </div>
-                <div class="space-y-4">
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        Enter your email address and we'll send you a link to reset your password.
-                    </p>
-                    <form id="forgot-password-form">
-                        <div>
-                            <label for="reset-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                            <input type="email" id="reset-email" name="reset-email" required
-                                class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+            </div>
+        </div>
+
+        <!-- Import Data Modal (hidden by default) -->
+        <div id="import-modal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium dark:text-white">Import Data</h3>
+                        <button id="close-import-modal"
+                            class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <p class="text-gray-700 dark:text-gray-300 mb-3">Select a Platform Engagement Tracker export
+                                file to import your data. This will merge the imported data with your existing data.</p>
+
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-center w-full">
+                                    <label for="import-file"
+                                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800 hover:bg-gray-100 dark:border-gray-600">
+                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                            <span
+                                                class="material-icons text-gray-500 dark:text-gray-400 text-3xl mb-2">upload_file</span>
+                                            <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span
+                                                    class="font-semibold">Click to upload</span> or drag and drop</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">JSON file only</p>
+                                        </div>
+                                        <input id="import-file" type="file" class="hidden" accept=".json" />
+                                    </label>
+                                </div>
+                                <div id="file-info" class="hidden text-sm text-gray-500 dark:text-gray-400"></div>
+
+                                <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                                    <h4 class="font-medium text-gray-900 dark:text-white mb-2">Import Options</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex items-center">
+                                            <input id="import-option-merge" type="radio" name="import-option"
+                                                value="merge" checked
+                                                class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" />
+                                            <label for="import-option-merge"
+                                                class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                                                Merge with existing data (recommended)
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input id="import-option-replace" type="radio" name="import-option"
+                                                value="replace"
+                                                class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" />
+                                            <label for="import-option-replace"
+                                                class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                                                Replace all existing data
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mt-4">
-                            <button type="submit" class="w-full btn btn-primary">
-                                <span class="material-icons mr-1">send</span> Send Reset Link
+
+                        <div id="import-preview" class="hidden">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Preview</h4>
+                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-gray-500 dark:text-gray-400">Content Items:</span>
+                                        <span id="preview-content-count"
+                                            class="font-medium text-gray-900 dark:text-white ml-1">0</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 dark:text-gray-400">Engagement Records:</span>
+                                        <span id="preview-engagement-count"
+                                            class="font-medium text-gray-900 dark:text-white ml-1">0</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 dark:text-gray-400">Export Date:</span>
+                                        <span id="preview-export-date"
+                                            class="font-medium text-gray-900 dark:text-white ml-1">-</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 dark:text-gray-400">User:</span>
+                                        <span id="preview-user"
+                                            class="font-medium text-gray-900 dark:text-white ml-1">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button id="import-data-btn" class="btn btn-primary" disabled>
+                                <span class="material-icons mr-1">upload</span> Import Data
                             </button>
                         </div>
-                    </form>
-                    <div id="reset-message" class="text-sm hidden"></div>
+                        <div id="import-message" class="text-green-500 dark:text-green-400 text-sm hidden"></div>
+                        <div id="import-error" class="text-red-500 dark:text-red-400 text-sm hidden"></div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- User Profile Modal (hidden by default) -->
+        <div id="profile-modal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium dark:text-white">Your Profile</h3>
+                        <button id="close-profile-modal"
+                            class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="flex flex-col items-center mb-6">
+                            <div
+                                class="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mb-3">
+                                <span class="material-icons text-4xl text-green-500 dark:text-green-300">person</span>
+                            </div>
+                            <h2 id="profile-name" class="text-xl font-semibold text-gray-900 dark:text-white">User Name
+                            </h2>
+                            <p id="profile-email" class="text-gray-500 dark:text-gray-400">user@example.com</p>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-4">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Account Information</h4>
+                            <div>
+                                <label for="profile-display-name"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display
+                                    Name</label>
+                                <input type="text" id="profile-display-name" name="profile-display-name"
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="profile-current-password"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current
+                                        Password</label>
+                                    <input type="password" id="profile-current-password" name="profile-current-password"
+                                        class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
+                                        placeholder="Enter to change password">
+                                </div>
+                                <div>
+                                    <label for="profile-new-password"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New
+                                        Password</label>
+                                    <input type="password" id="profile-new-password" name="profile-new-password"
+                                        class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2"
+                                        placeholder="New password">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-2">Account Statistics</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                                <div class="p-3">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Content Items</p>
+                                    <p id="profile-content-count"
+                                        class="text-xl font-semibold text-gray-900 dark:text-white">0</p>
+                                </div>
+                                <div class="p-3">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Views</p>
+                                    <p id="profile-views-count"
+                                        class="text-xl font-semibold text-gray-900 dark:text-white">0</p>
+                                </div>
+                                <div class="p-3">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Member Since</p>
+                                    <p id="profile-member-since"
+                                        class="text-xl font-semibold text-gray-900 dark:text-white">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <button id="save-profile" class="btn btn-primary">
+                                <span class="material-icons mr-1">save</span> Save Changes
+                            </button>
+                            <button id="delete-account" class="btn bg-red-500 hover:bg-red-600 text-white">
+                                <span class="material-icons mr-1">delete</span> Delete Account
+                            </button>
+                        </div>
+                        <div id="profile-message" class="text-green-500 dark:text-green-400 text-sm hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forgot Password Modal (hidden by default) -->
+        <div id="forgot-password-modal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center hidden z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium dark:text-white">Reset Password</h3>
+                        <button id="close-forgot-password-modal"
+                            class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            Enter your email address and we'll send you a link to reset your password.
+                        </p>
+                        <form id="forgot-password-form">
+                            <div>
+                                <label for="reset-email"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                <input type="email" id="reset-email" name="reset-email" required
+                                    class="shadow-sm focus:ring focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md p-2">
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="w-full btn btn-primary">
+                                    <span class="material-icons mr-1">send</span> Send Reset Link
+                                </button>
+                            </div>
+                        </form>
+                        <div id="reset-message" class="text-sm hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 </body>
+
 </html>

@@ -11,61 +11,52 @@ export const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
     }
 })
 
-// User Management
-export async function signUp(email, password, name) {
-    try {
-        // First create the auth user
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email,
-            password
-        })
-        
-        if (authError) throw authError
-        
-        if (!authData?.user) {
-            throw new Error('Registration failed - no user data returned')
-        }
-        
-        // Now create the user record in the public users table
-        const { error: userError } = await supabase
-            .from('users')
-            .insert([
-                {
-                    id: authData.user.id,  // Use the auth user's UUID
-                    email: email,
-                    name: name,
-                    created_at: new Date().toISOString()
-                }
-            ])
-            .select()
-            .single()
-        
-        if (userError) {
-            console.error('Error creating user record:', userError)
-            throw new Error('Failed to create user record')
-        }
-        
-        return { data: authData, error: null }
-    } catch (error) {
-        console.error('SignUp error:', error)
+// Session Management (Custom)
+export async function getUserBySessionId(sessionId) {
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', sessionId) // We are using the session ID as the user ID
+        .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
         throw error
     }
+    return data
 }
 
-// Sign in with email and password
-export async function signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-    })
-    
+export async function createUserWithSessionId(sessionId) {
+    const { data, error } = await supabase
+        .from('users')
+        .insert([
+            {
+                id: sessionId,
+                email: `${sessionId}@session.local`, // Dummy email
+                name: sessionId,
+                created_at: new Date().toISOString()
+            }
+        ])
+        .select()
+        .single()
+
     if (error) throw error
-    return { data, error }
+    return data
+}
+
+// Deprecated Auth Functions (kept for interface compatibility but unused)
+export async function signUp(email, password, name) {
+    console.warn('signUp is deprecated in Session ID mode')
+    return { error: { message: 'Use Session ID login' } }
+}
+
+export async function signIn(email, password) {
+    console.warn('signIn is deprecated in Session ID mode')
+    return { error: { message: 'Use Session ID login' } }
 }
 
 export async function signOut() {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    // Just a placeholder, actual signout happens in app.js by clearing localStorage
+    return { error: null }
 }
 
 // Content Management
@@ -74,7 +65,7 @@ export async function addContent(contentData) {
         .from('content_items')
         .insert([contentData])
         .select()
-    
+
     if (error) throw error
     return data[0]
 }
@@ -85,7 +76,7 @@ export async function updateContent(id, contentData) {
         .update(contentData)
         .eq('id', id)
         .select()
-    
+
     if (error) throw error
     return data[0]
 }
@@ -95,7 +86,7 @@ export async function deleteContent(id) {
         .from('content_items')
         .delete()
         .eq('id', id)
-    
+
     if (error) throw error
 }
 
@@ -104,7 +95,7 @@ export async function getContentItems(userId) {
         .from('content_items')
         .select('*')
         .eq('user_id', userId)
-    
+
     if (error) throw error
     return data
 }
@@ -115,7 +106,7 @@ export async function addEngagementData(engagementData) {
         .from('engagement_data')
         .insert([engagementData])
         .select()
-    
+
     if (error) throw error
     return data[0]
 }
@@ -138,7 +129,7 @@ export async function getEngagementData(userId) {
             )
         `)
         .eq('content_items.user_id', userId)
-    
+
     if (error) throw error
     return data
 }
@@ -153,7 +144,7 @@ export async function saveApiConfig(userId, platform, config) {
             config
         })
         .select()
-    
+
     if (error) throw error
     return data[0]
 }
@@ -163,7 +154,7 @@ export async function getApiConfig(userId) {
         .from('api_config')
         .select('*')
         .eq('user_id', userId)
-    
+
     if (error) throw error
     return data
 } 
